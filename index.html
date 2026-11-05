@@ -214,9 +214,9 @@ painel(){const at=ativos(),hj=at.filter(a=>pres(a.id)),f7=Math.round(at.reduce((
  <div class="card" style="margin-top:12px"><h3>Alunos · toque para ver o acompanhamento</h3><div class="wrap"><table><tr><th>Aluno</th><th>Objetivo</th><th>Últimos 7 dias</th><th>Última visita</th></tr>
  ${at.map(a=>`<tr class="cl" onclick="V.modal=${a.id};render()"><td><b>${esc(a.nome)}</b></td><td>${esc(a.obj)}</td><td>${dots(a.id)}</td><td>${ult2(a.id)}</td></tr>`).join('')}</table></div></div>`},
 alunos(){return`<div class="top"><h1>Cadastro de alunos</h1></div>
- <div class="card"><h3>Novo aluno</h3><div class="frm"><input id="nn" placeholder="Nome completo"><input id="nt" placeholder="WhatsApp com DDD">${V.role=='acad'?`<select id="nf">${S.profs.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join('')}</select>`:''}<select id="np"><option>Mensal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option></select><select id="no"><option>Emagrecimento</option><option>Hipertrofia</option><option>Condicionamento</option><option>Resistência</option></select><input id="nw" type="number" step=".1" placeholder="Peso (kg)"><button class="btn p" onclick="addAluno()">Cadastrar</button></div></div>
- <div class="card" style="margin-top:12px"><div class="wrap"><table><tr><th>Nome</th><th>WhatsApp</th><th>Plano</th><th>Vencimento</th><th>Status</th><th></th></tr>
- ${meus().length?'':'<tr><td colspan="6"><span class="hint">Nenhum aluno cadastrado ainda.</span></td></tr>'}${meus().map(a=>`<tr><td><b>${esc(a.nome)}</b><br><small class="hint">${esc(a.obj)} · ${esc(profNome(a.prof))}</small></td><td><a href="${waUrl(a.tel)}" target="_blank" rel="noopener" style="color:var(--pr)">${esc(a.tel)}</a></td><td>${esc(a.plano)}</td><td>${fd(a.venc)}</td><td><span class="tag ${a.ativo?'':'m'}">${a.ativo?'Ativo':'Inativo'}</span></td><td style="white-space:nowrap">${V.role=='acad'?`<select onchange="setProf(${a.id},this.value)">${S.profs.map(p=>`<option value="${p.id}" ${p.id==a.prof?'selected':''}>${esc(p.nome)}</option>`).join('')}</select> `:`<button class="btn" onclick="V.aluno=${a.id};V.tab='treinos';render()">Montar treino</button> <a class="btn p" href="${waUrl(a.tel,treinoTxt(a,new Date().getDay()))}" target="_blank" rel="noopener">Enviar treino</a> `}<button class="btn" onclick="togAluno(${a.id})">${a.ativo?'Inativar':'Ativar'}</button></td></tr>`).join('')}</table></div></div>`},
+ <div class="card"><h3>Novo aluno</h3><div class="frm"><input id="nn" placeholder="Nome completo"><input id="nt" placeholder="WhatsApp com DDD"><input id="ne" type="email" autocapitalize="off" placeholder="E-mail do aluno (cria o acesso ao app)">${V.role=='acad'?`<select id="nf">${S.profs.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join('')}</select>`:''}<select id="np"><option>Mensal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option></select><select id="no"><option>Emagrecimento</option><option>Hipertrofia</option><option>Condicionamento</option><option>Resistência</option></select><input id="nw" type="number" step=".1" placeholder="Peso (kg)"><button class="btn p" onclick="addAluno()">Cadastrar</button></div></div>
+ <div class="card" style="margin-top:12px"><div class="wrap"><table><tr><th>Nome</th><th>WhatsApp</th><th>Plano</th><th>Vencimento</th><th>Status</th><th>Acesso</th><th></th></tr>
+ ${meus().length?'':'<tr><td colspan="7"><span class="hint">Nenhum aluno cadastrado ainda.</span></td></tr>'}${meus().map(a=>`<tr><td><b>${esc(a.nome)}</b><br><small class="hint">${esc(a.obj)} · ${esc(profNome(a.prof))}</small></td><td><a href="${waUrl(a.tel)}" target="_blank" rel="noopener" style="color:var(--pr)">${esc(a.tel)}</a></td><td>${esc(a.plano)}</td><td>${fd(a.venc)}</td><td><span class="tag ${a.ativo?'':'m'}">${a.ativo?'Ativo':'Inativo'}</span></td><td style="white-space:nowrap">${acessoCell(a)}</td><td style="white-space:nowrap">${V.role=='acad'?`<select onchange="setProf(${a.id},this.value)">${S.profs.map(p=>`<option value="${p.id}" ${p.id==a.prof?'selected':''}>${esc(p.nome)}</option>`).join('')}</select> `:`<button class="btn" onclick="V.aluno=${a.id};V.tab='treinos';render()">Montar treino</button> <a class="btn p" href="${waUrl(a.tel,treinoTxt(a,new Date().getDay()))}" target="_blank" rel="noopener">Enviar treino</a> `}<button class="btn" onclick="togAluno(${a.id})">${a.ativo?'Inativar':'Ativar'}</button></td></tr>`).join('')}</table></div></div>`},
 pres(){return`<div class="top"><h1>Presença de hoje</h1><span class="tag">${ativos().filter(a=>pres(a.id)).length} presentes</span></div>
  <div class="card"><div class="wrap"><table><tr><th>Aluno</th><th>7 dias</th><th>Hoje</th></tr>
  ${ativos().length?'':'<tr><td colspan="3"><span class="hint">Nenhum aluno ativo ainda.</span></td></tr>'}${ativos().map(a=>`<tr><td><b>${esc(a.nome)}</b></td><td>${dots(a.id)}</td><td><button class="btn ${pres(a.id)?'':'p'}" onclick="togglePres(${a.id})">${pres(a.id)?'Presente · desfazer':'Fazer check-in'}</button></td></tr>`).join('')}</table></div></div>`},
@@ -273,14 +273,33 @@ evo(){const a=S.alunos.find(x=>x.id==V.uid),p=S.pesos[a.id]=S.pesos[a.id]||[],v=
 
 /* ===== Ações ===== */
 let busy=false;
+async function fnAluno(body){
+ try{const{data,error}=await sb.functions.invoke('gerenciar-aluno',{body});
+  if(error){let m=error.message||'erro';try{const j=await error.context.json();if(j&&j.erro)m=j.erro}catch(e){}
+   if(/not found|failed to fetch|FunctionsFetchError|relay/i.test(m))m='A função gerenciar-aluno não está publicada no Supabase.';return{erro:m}}
+  if(data&&data.erro)return{erro:data.erro};return{data}}catch(e){return{erro:'Falha de conexão: '+(e.message||e)}}}
+const mostrarAcesso=(a,email,senha,titulo)=>{const link=location.origin+location.pathname,txt=`Olá, ${a.nome.split(' ')[0]}! Seu acesso ao MOVEFIT está pronto.\n\nLink: ${link}\nE-mail: ${email}\nSenha provisória: ${senha}\n\nEntre para ver seus treinos. 💪`;V.cred={nome:a.nome,tel:a.tel,email,senha,titulo,txt}};
 async function addAluno(){const n=$('#nn').value.trim();if(!n)return toast('Informe o nome');if(busy)return;
- const prof=V.role=='acad'?(+$('#nf')?.value||0):V.pid,pr=S.profs.find(x=>x.id==prof),tel=$('#nt').value.trim();
- busy=true;
- const{data,error}=await sb.from('alunos').insert({academia_id:V.acadId,profissional_id:pr?pr.sb:null,nome:n,whatsapp:tel||null,plano:$('#np').value,vencimento:K(D(30)),objetivo:$('#no').value}).select().single();
- busy=false;if(error)return toast('Não foi possível cadastrar: '+error.message);
- const id=S.map[data.id]=++S.nid;S.alunos.push({id,sb:data.id,perfil:null,nome:n,tel:tel||'—',plano:data.plano,venc:data.vencimento,obj:data.objetivo,ativo:data.ativo!==false,prof});
+ const prof=V.role=='acad'?(+$('#nf')?.value||0):V.pid,pr=S.profs.find(x=>x.id==prof),tel=$('#nt').value.trim(),email=$('#ne').value.trim().toLowerCase();
+ busy=true;let data,senha=null;
+ if(email){const r=await fnAluno({acao:'criar',nome:n,email,telefone:tel||null,plano:$('#np').value,objetivo:$('#no').value,vencimento:K(D(30)),profissional_id:pr?pr.sb:undefined});
+  if(r.erro){busy=false;return toast(r.erro)}data=r.data.aluno;senha=r.data.senha}
+ else{const r=await sb.from('alunos').insert({academia_id:V.acadId,profissional_id:pr?pr.sb:null,nome:n,whatsapp:tel||null,plano:$('#np').value,vencimento:K(D(30)),objetivo:$('#no').value}).select().single();
+  if(r.error){busy=false;return toast('Não foi possível cadastrar: '+r.error.message)}data=r.data}
+ busy=false;
+ const id=S.map[data.id]=++S.nid;const al={id,sb:data.id,perfil:data.perfil_id||null,nome:n,tel:tel||'—',plano:data.plano,venc:data.vencimento,obj:data.objetivo,ativo:data.ativo!==false,prof};S.alunos.push(al);
  S.alunos.sort((m,k)=>m.nome.localeCompare(k.nome,'pt-BR'));
- const w=Math.round(parseFloat($('#nw').value)*10)/10;S.pesos[id]=[];if(w){const r=await sb.from('mf_pesos').insert({aluno_id:data.id,kg:w});if(!r.error)S.pesos[id]=[w]}save();render();toast('Aluno cadastrado')}
+ const w=Math.round(parseFloat($('#nw').value)*10)/10;S.pesos[id]=[];if(w){const r=await sb.from('mf_pesos').insert({aluno_id:data.id,kg:w});if(!r.error)S.pesos[id]=[w]}
+ if(senha)mostrarAcesso(al,email,senha,'Aluno e acesso criados');save();render();toast(senha?'Aluno cadastrado com acesso':'Aluno cadastrado')}
+const acessoCell=a=>a.perfil?`<span class="tag">Com acesso</span> <button class="btn" onclick="novaSenhaAluno(${a.id})">Nova senha</button>`:`<button class="btn" onclick="V.acesso=${a.id};render()">Criar acesso</button>`;
+async function criarAcesso(){const a=S.alunos.find(x=>x.id==V.acesso),email=($('#ae').value||'').trim().toLowerCase();if(!email)return toast('Informe o e-mail do aluno');if(busy)return;busy=true;
+ const r=await fnAluno({acao:'criar',aluno_id:a.sb,email});busy=false;if(r.erro)return toast(r.erro);
+ a.perfil=r.data.aluno.perfil_id;V.acesso=null;mostrarAcesso(a,r.data.email,r.data.senha,'Acesso criado');render()}
+async function novaSenhaAluno(id){const a=S.alunos.find(x=>x.id==id);if(busy||!confirm('Gerar uma nova senha para '+a.nome+'? A senha antiga deixa de funcionar.'))return;busy=true;
+ const r=await fnAluno({acao:'redefinir',aluno_id:a.sb});busy=false;if(r.erro)return toast(r.erro);mostrarAcesso(a,r.data.email,r.data.senha,'Nova senha gerada');render()}
+function copiarAcesso(){navigator.clipboard.writeText(V.cred.txt).then(()=>toast('Copiado'),()=>toast('Não foi possível copiar'))}
+const acessoModal=()=>{const a=S.alunos.find(x=>x.id==V.acesso);return`<div class="mod"><div class="card"><h3 style="font-size:17px">Criar acesso · ${esc(a.nome)}</h3><p class="hint">O aluno entra com este e-mail e uma senha provisória gerada agora. Ele só vê o próprio treino.</p><div class="frm"><input id="ae" type="email" autocapitalize="off" placeholder="E-mail do aluno"></div><div class="frm"><button class="btn p" onclick="criarAcesso()">Criar acesso</button><button class="btn" onclick="V.acesso=null;render()">Cancelar</button></div></div></div>`};
+const credModal=()=>{const c=V.cred;return`<div class="mod"><div class="card"><h3 style="font-size:17px">${esc(c.titulo)}</h3><p class="hint">Envie agora: a senha provisória só aparece desta vez.</p><div class="row"><span>Aluno</span><b>${esc(c.nome)}</b></div><div class="row"><span>E-mail</span><b>${esc(c.email)}</b></div><div class="row"><span>Senha</span><b style="font-family:monospace;font-size:19px;letter-spacing:1px">${esc(c.senha)}</b></div><div class="frm" style="margin-top:14px"><a class="btn p" href="${waUrl(c.tel,c.txt)}" target="_blank" rel="noopener">Enviar pelo WhatsApp</a><button class="btn" onclick="copiarAcesso()">Copiar</button></div><button class="btn g" style="margin-top:10px" onclick="V.cred=null;render()">Fechar</button></div></div>`};
 async function togAluno(id){const a=S.alunos.find(x=>x.id==id);a.ativo=!a.ativo;render();
  const{error}=await sb.from('alunos').update({ativo:a.ativo}).eq('id',a.sb);
  if(error){a.ativo=!a.ativo;render();return toast('Não foi possível salvar: '+error.message)}save()}
@@ -321,7 +340,7 @@ function shell(items,body){const pro=V.role!='aluno',a=S.alunos.find(x=>x.id==V.
  <button class="lgo" onclick="sair()">${ic('out',18)}<span>Sair</span></button></nav><main>${body}</main></div>`}
 function render(){const el=$('#app');if(!V.role){el.innerHTML=login();return}
  const R={acad:[NA,PA],pro:[NP,PV],aluno:[NS,SV]}[V.role];el.innerHTML=shell(R[0],R[1][V.tab]());
- if(V.role!='aluno'&&V.modal)el.insertAdjacentHTML('beforeend',modalAluno())}
+ if(V.role!='aluno'&&V.modal)el.insertAdjacentHTML('beforeend',modalAluno());if(V.role!='aluno'&&V.acesso)el.insertAdjacentHTML('beforeend',acessoModal());if(V.role!='aluno'&&V.cred)el.insertAdjacentHTML('beforeend',credModal())}
 /* ===== Autenticação (Supabase Auth) =====
    Papéis vêm da tabela public.perfis (id = auth.users.id, nome, papel, academia_id).
    A proteção real dos dados é feita pelas regras RLS do banco, não por esta tela. */
@@ -385,7 +404,7 @@ async function boot(){const a=$('#app');
  if(/type=recovery/.test(location.hash))return;
  try{const{data}=await sb.auth.getSession();if(data.session)return await abrir(data.session.user)}catch(e){}
  await splashWait();render()}
-document.addEventListener('visibilitychange',async()=>{if(document.hidden||!V.role||!V.sess||V.modal||busy||Date.now()-V.last<20000)return;V.last=Date.now();await sincronizar(V.sess.user,V.sess.pf,V.sess.R);render()});
+document.addEventListener('visibilitychange',async()=>{if(document.hidden||!V.role||!V.sess||V.modal||V.acesso||V.cred||busy||Date.now()-V.last<20000)return;V.last=Date.now();await sincronizar(V.sess.user,V.sess.pf,V.sess.R);render()});
 boot();
 </script>
 </body>
