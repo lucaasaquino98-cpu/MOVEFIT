@@ -126,11 +126,37 @@ nav .brand,nav .sp,nav .usr,nav .lb{display:none}
 nav button{flex-direction:column;gap:2px;font-size:10px;padding:6px 4px}
 main{padding:12px;padding-top:calc(12px + env(safe-area-inset-top,0px))}.two{grid-template-columns:1fr}
 }
+
+/* ===== Menu de contexto próprio (substitui o do navegador) ===== */
+body{-webkit-touch-callout:none}
+input,textarea{-webkit-touch-callout:default}
+img{-webkit-user-drag:none}
+@media (pointer:coarse){body{-webkit-user-select:none;user-select:none}input,textarea{-webkit-user-select:text;user-select:text}}
+#ctxbk{position:fixed;inset:0;z-index:19;display:none}
+#ctxbk.on{display:block}
+#ctxbk.sheet{background:rgba(0,0,0,.4)}
+#ctx{position:fixed;z-index:20;display:none;min-width:220px;max-width:min(340px,calc(100vw - 16px));max-height:calc(100vh - 16px);max-height:calc(100dvh - 16px);overflow:auto;background:var(--sf);color:var(--tx);border:1px solid var(--bd);border-radius:12px;padding:6px;box-shadow:0 14px 44px rgba(0,0,0,.3);-webkit-user-select:none;user-select:none;overscroll-behavior:contain;animation:ctxIn .12s ease-out}
+#ctx.on{display:block}
+#ctx .ch{padding:6px 10px 8px;font-size:12px;font-weight:700;color:var(--mu);border-bottom:1px solid var(--bd);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ctx button{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;font:14px/1.3 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#ctx button span{flex:1;min-width:0}
+#ctx button:hover,#ctx button:focus-visible{background:var(--tint)}
+#ctx button.off{opacity:.4;cursor:default}
+#ctx button.off:hover{background:none}
+#ctx button.dg,#ctx button.dg svg{color:var(--ba)}
+#ctx svg{width:18px;height:18px;color:var(--mu)}
+#ctx hr{border:0;border-top:1px solid var(--bd);margin:4px 2px}
+#ctx.sheet{left:8px;right:8px;top:auto;bottom:calc(8px + env(safe-area-inset-bottom,0px));max-width:none;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);border-radius:16px;animation:ctxUp .18s ease-out}
+#ctx.sheet button{padding:13px 12px;font-size:15px}
+@keyframes ctxIn{0%{opacity:0;transform:scale(.97)}100%{opacity:1;transform:none}}
+@keyframes ctxUp{0%{opacity:0;transform:translateY(24px)}100%{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){#ctx{animation:none!important}}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite"></div>
+<div id="ctxbk"></div><div id="ctx" role="menu"></div>
 <input type="file" id="fx" accept="image/*" hidden>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script>
@@ -203,7 +229,7 @@ const heat=id=>`<div class="heat">${Array.from({length:28},(_,i)=>`<i class="${p
 const kpi=(l,v,s='')=>`<div class="card kpi"><small>${l}</small><b>${v}</b>${s?`<small>${s}</small>`:''}</div>`;
 const bars=(v,l)=>{const m=Math.max(...v,1);return`<div class="bars">${v.map((n,i)=>`<div><span>${n}</span><i style="height:${n/m*85}%"></i><span>${l[i]}</span></div>`).join('')}</div>`};
 function readImg(f,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas'),k=Math.min(1,480/im.width);c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.72))};im.src=r.result};r.readAsDataURL(f)}
-const exCard=(e,extra='')=>`<div class="ex ${extra.ok?'ok':''}">${exImg(e)}<div class="in"><b>${esc(e.n)}</b><small>${e.s} × ${esc(e.r)} · ${esc(e.c)}</small></div>${extra.btn||''}</div>`;
+const exCard=(e,extra='')=>`<div class="ex ${extra.ok?'ok':''}"${extra.ctx?` data-ctx="${extra.ctx}"`:''}>${exImg(e)}<div class="in"><b>${esc(e.n)}</b><small>${e.s} × ${esc(e.r)} · ${esc(e.c)}</small></div>${extra.btn||''}</div>`;
 
 /* ===== Telas do PROFISSIONAL ===== */
 const NP=[['painel','Painel','home'],['alunos','Alunos','users'],['pres','Presença','check'],['treinos','Treinos','dumb'],['rel','Relatórios','chart']];
@@ -215,18 +241,18 @@ painel(){const at=ativos(),hj=at.filter(a=>pres(a.id)),f7=Math.round(at.reduce((
  <div class="kpis">${kpi('Alunos ativos',at.length)}${kpi('Presentes hoje',hj.length)}${kpi('Frequência 7 dias',f7+'%','meta: 5 treinos/semana')}${kpi('Planos a vencer',venc.length,'em até 7 dias')}</div>
  <div class="two"><div class="card"><h3>Atenção</h3>${at1}</div><div class="card"><h3>Presentes hoje</h3>${hj.map(a=>`<div class="row"><span>${esc(a.nome)}</span><span class="tag">${esc(a.obj)}</span></div>`).join('')||'<p class="hint">Ninguém fez check-in ainda.</p>'}</div></div>
  <div class="card" style="margin-top:12px"><h3>Alunos · toque para ver o acompanhamento</h3><div class="wrap"><table><tr><th>Aluno</th><th>Objetivo</th><th>Últimos 7 dias</th><th>Última visita</th></tr>
- ${at.map(a=>`<tr class="cl" onclick="V.modal=${a.id};render()"><td><b>${esc(a.nome)}</b></td><td>${esc(a.obj)}</td><td>${dots(a.id)}</td><td>${ult2(a.id)}</td></tr>`).join('')}</table></div></div>`},
+ ${at.map(a=>`<tr class="cl" data-ctx="aluno:${a.id}" onclick="V.modal=${a.id};render()"><td><b>${esc(a.nome)}</b></td><td>${esc(a.obj)}</td><td>${dots(a.id)}</td><td>${ult2(a.id)}</td></tr>`).join('')}</table></div></div>`},
 alunos(){return`<div class="top"><h1>Cadastro de alunos</h1></div>
  <div class="card"><h3>Novo aluno</h3><div class="frm"><input id="nn" placeholder="Nome completo"><input id="nt" placeholder="WhatsApp com DDD"><input id="ne" type="email" autocapitalize="off" placeholder="E-mail do aluno (cria o acesso ao app)">${V.role=='acad'?`<select id="nf">${S.profs.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join('')}</select>`:''}<select id="np"><option>Mensal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option></select><select id="no"><option>Emagrecimento</option><option>Hipertrofia</option><option>Condicionamento</option><option>Resistência</option></select><input id="nw" type="number" step=".1" placeholder="Peso (kg)"><button class="btn p" onclick="addAluno()">Cadastrar</button></div></div>
  <div class="card" style="margin-top:12px"><div class="wrap"><table><tr><th>Nome</th><th>WhatsApp</th><th>Plano</th><th>Vencimento</th><th>Status</th><th>Acesso</th><th></th></tr>
- ${meus().length?'':'<tr><td colspan="7"><span class="hint">Nenhum aluno cadastrado ainda.</span></td></tr>'}${meus().map(a=>`<tr><td><b>${esc(a.nome)}</b><br><small class="hint">${esc(a.obj)} · ${esc(profNome(a.prof))}</small></td><td><a href="${waUrl(a.tel)}" target="_blank" rel="noopener" style="color:var(--pr)">${esc(a.tel)}</a></td><td>${esc(a.plano)}</td><td>${fd(a.venc)}</td><td><span class="tag ${a.ativo?'':'m'}">${a.ativo?'Ativo':'Inativo'}</span></td><td style="white-space:nowrap">${acessoCell(a)}</td><td style="white-space:nowrap">${V.role=='acad'?`<select onchange="setProf(${a.id},this.value)">${S.profs.map(p=>`<option value="${p.id}" ${p.id==a.prof?'selected':''}>${esc(p.nome)}</option>`).join('')}</select> `:`<button class="btn" onclick="V.aluno=${a.id};V.tab='treinos';render()">Montar treino</button> <a class="btn p" href="${waUrl(a.tel,treinoTxt(a,new Date().getDay()))}" target="_blank" rel="noopener">Enviar treino</a> `}<button class="btn" onclick="togAluno(${a.id})">${a.ativo?'Inativar':'Ativar'}</button></td></tr>`).join('')}</table></div></div>`},
+ ${meus().length?'':'<tr><td colspan="7"><span class="hint">Nenhum aluno cadastrado ainda.</span></td></tr>'}${meus().map(a=>`<tr data-ctx="aluno:${a.id}"><td><b>${esc(a.nome)}</b><br><small class="hint">${esc(a.obj)} · ${esc(profNome(a.prof))}</small></td><td><a href="${waUrl(a.tel)}" target="_blank" rel="noopener" style="color:var(--pr)">${esc(a.tel)}</a></td><td>${esc(a.plano)}</td><td>${fd(a.venc)}</td><td><span class="tag ${a.ativo?'':'m'}">${a.ativo?'Ativo':'Inativo'}</span></td><td style="white-space:nowrap">${acessoCell(a)}</td><td style="white-space:nowrap">${V.role=='acad'?`<select onchange="setProf(${a.id},this.value)">${S.profs.map(p=>`<option value="${p.id}" ${p.id==a.prof?'selected':''}>${esc(p.nome)}</option>`).join('')}</select> `:`<button class="btn" onclick="V.aluno=${a.id};V.tab='treinos';render()">Montar treino</button> <a class="btn p" href="${waUrl(a.tel,treinoTxt(a,new Date().getDay()))}" target="_blank" rel="noopener">Enviar treino</a> `}<button class="btn" onclick="togAluno(${a.id})">${a.ativo?'Inativar':'Ativar'}</button></td></tr>`).join('')}</table></div></div>`},
 pres(){return`<div class="top"><h1>Presença de hoje</h1><span class="tag">${ativos().filter(a=>pres(a.id)).length} presentes</span></div>
  <div class="card"><div class="wrap"><table><tr><th>Aluno</th><th>7 dias</th><th>Hoje</th></tr>
- ${ativos().length?'':'<tr><td colspan="3"><span class="hint">Nenhum aluno ativo ainda.</span></td></tr>'}${ativos().map(a=>`<tr><td><b>${esc(a.nome)}</b></td><td>${dots(a.id)}</td><td><button class="btn ${pres(a.id)?'':'p'}" onclick="togglePres(${a.id})">${pres(a.id)?'Presente · desfazer':'Fazer check-in'}</button></td></tr>`).join('')}</table></div></div>`},
+ ${ativos().length?'':'<tr><td colspan="3"><span class="hint">Nenhum aluno ativo ainda.</span></td></tr>'}${ativos().map(a=>`<tr data-ctx="aluno:${a.id}"><td><b>${esc(a.nome)}</b></td><td>${dots(a.id)}</td><td><button class="btn ${pres(a.id)?'':'p'}" onclick="togglePres(${a.id})">${pres(a.id)?'Presente · desfazer':'Fazer check-in'}</button></td></tr>`).join('')}</table></div></div>`},
 treinos(){const al=ativos();if(!al.length)return'<div class="top"><h1>Montar treino</h1></div><div class="card"><p class="hint">Cadastre um aluno primeiro.</p></div>';if(!al.some(a=>a.id==V.aluno))V.aluno=al[0].id;const A=S.alunos.find(a=>a.id==V.aluno),d=V.dia,l=pl(A.id,d);
  return`<div class="top"><h1>Montar treino</h1><select onchange="V.aluno=+this.value;render()">${al.map(a=>`<option value="${a.id}" ${a.id==A.id?'selected':''}>${esc(a.nome)}</option>`).join('')}</select><a class="btn p" href="${waUrl(A.tel,treinoTxt(A,d))}" target="_blank" rel="noopener">Enviar treino de ${DS[d]} no WhatsApp</a></div>
- <div class="chips">${[1,2,3,4,5,6,0].map(i=>`<button class="chip ${i==d?'on':''}" onclick="V.dia=${i};render()">${DS[i]}</button>`).join('')}</div>
- <div class="card"><h3>${DAYS[d]} · ${l.length} exercício${l.length==1?'':'s'}</h3>${l.map(e=>exCard(e,{btn:`<button class="btn" onclick="fotoEx(${e.id})" title="Trocar foto">${ic('cam',18)}</button><button class="btn" onclick="delEx(${e.id})">Remover</button>`})).join('')||'<p class="hint">Dia de descanso. Adicione exercícios abaixo.</p>'}
+ <div class="chips">${[1,2,3,4,5,6,0].map(i=>`<button class="chip ${i==d?'on':''}" data-ctx="dia:${i}" onclick="V.dia=${i};render()">${DS[i]}</button>`).join('')}</div>
+ <div class="card"><h3>${DAYS[d]} · ${l.length} exercício${l.length==1?'':'s'}</h3>${l.map(e=>exCard(e,{ctx:'exp:'+e.id,btn:`<button class="btn" onclick="fotoEx(${e.id})" title="Trocar foto">${ic('cam',18)}</button><button class="btn" onclick="delEx(${e.id})">Remover</button>`})).join('')||'<p class="hint">Dia de descanso. Adicione exercícios abaixo.</p>'}
  <h3 style="margin-top:14px">Adicionar exercício</h3><div class="frm"><input id="en" list="lib" placeholder="Nome do exercício"><datalist id="lib">${Object.keys(LIB).map(k=>`<option value="${k}">`).join('')}</datalist><input id="es" type="number" min="1" placeholder="Séries"><input id="er" placeholder="Reps / tempo"><input id="ec" placeholder="Carga"></div>
  <div class="frm"><input id="ef" type="file" accept="image/*"><button class="btn p" onclick="addEx()">Adicionar ao treino</button></div>
  <p class="hint" style="margin-top:10px">Sem foto enviada, o exercício usa a figura padrão. As fotos reduzem automaticamente para caber no navegador.</p></div>`},
@@ -252,7 +278,7 @@ const waUrl=(tel,txt)=>{let n=String(tel||'').replace(/\D/g,'');if(n.length&&n.l
 const treinoTxt=(a,d)=>{const l=pl(a.id,d);return`Olá, ${a.nome.split(' ')[0]}! Seu treino de ${DAYS[d]}${d==new Date().getDay()?' (hoje)':''}:\n\n`+(l.length?l.map((e,i)=>`${i+1}. ${e.n} — ${e.s}x${e.r}${e.c&&e.c!='—'?' · '+e.c:''}`).join('\n'):'Dia de descanso.')+`\n\nBom treino! 💪 — ${profOf(a).nome} · MOVEFIT`};
 const NA=[['painel','Visão geral','home'],['profs','Profissionais','users'],['alunos','Alunos','users'],['rel','Relatórios','chart']];
 const PA={painel:PV.painel,alunos:PV.alunos,rel:PV.rel,
-profs(){return`<div class="top"><h1>Profissionais</h1></div><div class="card"><h3>Novo profissional</h3><p class="hint" style="margin:0">Para cadastrar um professor: crie o usuário em Authentication > Users e rode o script 05 (papel profissional). Ele aparece aqui automaticamente.</p></div><div class="card" style="margin-top:12px"><div class="wrap"><table><tr><th>Nome</th><th>WhatsApp</th><th>Alunos ativos</th></tr>${S.profs.map(p=>`<tr><td><b>${esc(p.nome)}</b></td><td><a href="${waUrl(p.tel)}" target="_blank" rel="noopener" style="color:var(--pr)">${esc(p.tel)}</a></td><td>${S.alunos.filter(a=>a.prof==p.id&&a.ativo).length}</td></tr>`).join('')}</table></div></div>`}};
+profs(){return`<div class="top"><h1>Profissionais</h1></div><div class="card"><h3>Novo profissional</h3><p class="hint" style="margin:0">Para cadastrar um professor: crie o usuário em Authentication > Users e rode o script 05 (papel profissional). Ele aparece aqui automaticamente.</p></div><div class="card" style="margin-top:12px"><div class="wrap"><table><tr><th>Nome</th><th>WhatsApp</th><th>Alunos ativos</th></tr>${S.profs.map(p=>`<tr data-ctx="prof:${p.id}"><td><b>${esc(p.nome)}</b></td><td><a href="${waUrl(p.tel)}" target="_blank" rel="noopener" style="color:var(--pr)">${esc(p.tel)}</a></td><td>${S.alunos.filter(a=>a.prof==p.id&&a.ativo).length}</td></tr>`).join('')}</table></div></div>`}};
 async function setProf(id,p){const a=S.alunos.find(x=>x.id==id),pr=S.profs.find(x=>x.id==+p),old=a.prof;
  const{error}=await sb.from('alunos').update({profissional_id:pr?pr.sb:null}).eq('id',a.sb);
  if(error){render();return toast('Não foi possível transferir: '+error.message)}
@@ -262,9 +288,9 @@ async function setProf(id,p){const a=S.alunos.find(x=>x.id==id),pr=S.profs.find(
 const NS=[['hoje','Treino de hoje','dumb'],['evo','Minha evolução','chart']];
 const SV={
 hoje(){const a=S.alunos.find(x=>x.id==V.uid),l=pl(V.uid,new Date().getDay()),k=K(new Date()),dn=S.done[k+'|'+a.id]||[],p=pres(a.id),pc=l.length?Math.round(dn.length/l.length*100):0;
- return`<div class="card hero"><div style="flex:1;min-width:180px"><h1>Olá, ${esc(a.nome.split(' ')[0])}!</h1><div>${DAYS[new Date().getDay()]} · plano ${esc(a.plano)} até ${fd(a.venc)} · ${esc(profOf(a).nome)}</div></div><a class="btn" href="${waUrl(profOf(a).tel,'Olá, '+esc(profOf(a).nome)+'! Aqui é '+a.nome+'.')}" target="_blank" rel="noopener">WhatsApp do professor</a><button class="btn" onclick="togglePres(${a.id})">${p?'Presença confirmada ✓':'Fazer check-in'}</button></div>
+ return`<div class="card hero" data-ctx="hero"><div style="flex:1;min-width:180px"><h1>Olá, ${esc(a.nome.split(' ')[0])}!</h1><div>${DAYS[new Date().getDay()]} · plano ${esc(a.plano)} até ${fd(a.venc)} · ${esc(profOf(a).nome)}</div></div><a class="btn" href="${waUrl(profOf(a).tel,'Olá, '+esc(profOf(a).nome)+'! Aqui é '+a.nome+'.')}" target="_blank" rel="noopener">WhatsApp do professor</a><button class="btn" onclick="togglePres(${a.id})">${p?'Presença confirmada ✓':'Fazer check-in'}</button></div>
  <div class="card" style="margin-top:12px"><div class="row" style="border:0"><h3 style="margin:0">Treino do dia</h3><b>${dn.length}/${l.length}</b></div><div class="bar" style="margin-bottom:12px"><i style="width:${pc}%"></i></div>
- ${l.map(e=>exCard(e,{ok:dn.includes(e.id),btn:`<button class="ck ${dn.includes(e.id)?'on':''}" onclick="togDone(${e.id})" aria-label="Concluir">${ic('ok',22)}</button>`})).join('')||'<div class="hint" style="text-align:center;padding:20px">Hoje é dia de descanso. Aproveite para se recuperar.</div>'}
+ ${l.map(e=>exCard(e,{ctx:'exa:'+e.id,ok:dn.includes(e.id),btn:`<button class="ck ${dn.includes(e.id)?'on':''}" onclick="togDone(${e.id})" aria-label="Concluir">${ic('ok',22)}</button>`})).join('')||'<div class="hint" style="text-align:center;padding:20px">Hoje é dia de descanso. Aproveite para se recuperar.</div>'}
  ${l.length&&pc==100?'<p style="text-align:center;font-weight:700;color:var(--ok)">Treino concluído! Bom trabalho.</p>':''}</div>`},
 evo(){const a=S.alunos.find(x=>x.id==V.uid),p=S.pesos[a.id]=S.pesos[a.id]||[],v=p.length>1?(p[p.length-1]-p[0]).toFixed(1):'0.0',wk=[-21,-14,-7,0].map(o=>{let n=0;for(let i=o-6;i<=o;i++)if(pres(a.id,i))n++;return n});
  return`<div class="top"><h1>Minha evolução</h1></div>
@@ -305,7 +331,7 @@ async function novaSenhaAluno(id){const a=S.alunos.find(x=>x.id==id);if(busy||!c
  const r=await fnAluno({acao:'redefinir',aluno_id:a.sb});busy=false;if(r.erro)return toast(r.erro);mostrarAcesso(a,r.data.email,r.data.senha,'Nova senha gerada');render()}
 function copiarAcesso(){navigator.clipboard.writeText(V.cred.txt).then(()=>toast('Copiado'),()=>toast('Não foi possível copiar'))}
 const acessoModal=()=>{const a=S.alunos.find(x=>x.id==V.acesso);return`<div class="mod"><div class="card"><h3 style="font-size:17px">Criar acesso · ${esc(a.nome)}</h3><p class="hint">O aluno entra com este e-mail e uma senha provisória gerada agora. Ele só vê o próprio treino.</p><div class="frm"><input id="ae" type="email" autocapitalize="off" placeholder="E-mail do aluno"></div><div class="frm"><button class="btn p" onclick="criarAcesso()">Criar acesso</button><button class="btn" onclick="V.acesso=null;render()">Cancelar</button></div></div></div>`};
-const credModal=()=>{const c=V.cred;return`<div class="mod"><div class="card"><h3 style="font-size:17px">${esc(c.titulo)}</h3><p class="hint">Envie agora: a senha provisória só aparece desta vez. No primeiro acesso, o aluno será obrigado a criar a própria senha.</p><div class="row"><span>Aluno</span><b>${esc(c.nome)}</b></div><div class="row"><span>E-mail</span><b>${esc(c.email)}</b></div><div class="row"><span>Senha</span><b style="font-family:monospace;font-size:19px;letter-spacing:1px">${esc(c.senha)}</b></div><div class="frm" style="margin-top:14px"><a class="btn p" href="${waUrl(c.tel,c.txt)}" target="_blank" rel="noopener">Enviar pelo WhatsApp</a><button class="btn" onclick="copiarAcesso()">Copiar</button></div><button class="btn g" style="margin-top:10px" onclick="V.cred=null;render()">Fechar</button></div></div>`};
+const credModal=()=>{const c=V.cred;return`<div class="mod"><div class="card" data-ctx="cred"><h3 style="font-size:17px">${esc(c.titulo)}</h3><p class="hint">Envie agora: a senha provisória só aparece desta vez. No primeiro acesso, o aluno será obrigado a criar a própria senha.</p><div class="row"><span>Aluno</span><b>${esc(c.nome)}</b></div><div class="row"><span>E-mail</span><b>${esc(c.email)}</b></div><div class="row"><span>Senha</span><b style="font-family:monospace;font-size:19px;letter-spacing:1px">${esc(c.senha)}</b></div><div class="frm" style="margin-top:14px"><a class="btn p" href="${waUrl(c.tel,c.txt)}" target="_blank" rel="noopener">Enviar pelo WhatsApp</a><button class="btn" onclick="copiarAcesso()">Copiar</button></div><button class="btn g" style="margin-top:10px" onclick="V.cred=null;render()">Fechar</button></div></div>`};
 async function togAluno(id){const a=S.alunos.find(x=>x.id==id);if(busy)return;const novo=!a.ativo;
  if(!novo&&a.perfil&&!confirm('Inativar '+a.nome+'? Ele não conseguirá mais entrar no app até ser ativado de novo.'))return;
  busy=true;let erro=null;
@@ -331,6 +357,117 @@ async function addPeso(){const w=Math.round(parseFloat($('#pw').value)*10)/10;if
 /* entrar() fica na seção de autenticação */
 /* sair() fica na seção de autenticação */
 const go=t=>{V.tab=t;render()};
+
+/* ===== Menu de contexto próprio =====
+   O menu do navegador (botão direito, toque longo, tecla de menu) é bloqueado em todo o app.
+   Cada elemento declara seu contexto com data-ctx="tipo:id"; cxData() monta as ações do tipo. */
+Object.assign(I,{eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/>',
+trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+chat:'<path d="M4 5h16v11H9l-5 4z"/>',
+refresh:'<path d="M20 11a8 8 0 00-14-4L4 9M4 4v5h5M4 13a8 8 0 0014 4l2-2M20 20v-5h-5"/>',
+close:'<path d="M6 6l12 12M18 6L6 18"/>',
+cut:'<circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8 16L19 4M16 16L5 4"/>',
+paste:'<rect x="6" y="5" width="12" height="16" rx="2"/><path d="M9 5V3h6v2"/>',
+sel:'<rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="3 3"/>'});
+const CX={t:0,open:false,touch:false,hold:false};
+const abrirUrl=u=>{window.open(u,'_blank','noopener')};
+const telOk=t=>String(t||'').replace(/\D/g,'').length>=8;
+const clip=(t,msg)=>{const ok=()=>toast(msg||'Copiado'),no=()=>{try{const x=document.createElement('textarea');x.value=t;x.style.cssText='position:fixed;opacity:0';document.body.appendChild(x);x.select();const r=document.execCommand('copy');x.remove();r?ok():toast('Não foi possível copiar')}catch(e){toast('Não foi possível copiar')}};
+ navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(t).then(ok,no):no()};
+const tidy=a=>{const o=[];a.forEach(x=>{if(x.sep&&(!o.length||o[o.length-1].sep))return;o.push(x)});while(o.length&&o[o.length-1].sep)o.pop();return o};
+const findEx=id=>Object.values(S.plano).flatMap(p=>Object.values(p).flat()).find(e=>e.id==id);
+async function atualizar(){if(busy||!V.sess)return;busy=true;toast('Atualizando…');
+ try{await sincronizar(V.sess.user,V.sess.pf,V.sess.R)}catch(e){}
+ busy=false;V.last=Date.now();
+ if(V.sess.R=='aluno'&&inativo()){V.role=null;await sb.auth.signOut();render();return setMsg(MSG_INATIVO)}
+ render();toast('Dados atualizados')}
+
+function cxClose(){const c=$('#ctx'),b=$('#ctxbk');if(!c)return;c.className='';b.className='';c.innerHTML='';CX.open=false}
+function cxShow(m,x,y){const c=$('#ctx'),b=$('#ctxbk'),touch=matchMedia('(pointer:coarse)').matches;
+ c.innerHTML='';if(m.head){const h=document.createElement('div');h.className='ch';h.textContent=m.head;c.appendChild(h)}
+ m.items.forEach(it=>{if(it.sep){c.appendChild(document.createElement('hr'));return}
+  const bt=document.createElement('button');bt.type='button';bt.setAttribute('role','menuitem');bt.className=(it.danger?'dg ':'')+(it.off?'off':'');if(it.off)bt.setAttribute('aria-disabled','true');
+  bt.innerHTML=(it.i?ic(it.i,18):'<svg viewBox="0 0 24 24"></svg>')+'<span></span>';bt.lastChild.textContent=it.t;
+  bt.onclick=ev=>{ev.stopPropagation();if(it.off)return;cxClose();it.f()};c.appendChild(bt)});
+ c.className='on'+(touch?' sheet':'');b.className='on'+(touch?' sheet':'');c.style.left=c.style.top='';
+ if(!touch){c.style.left='0px';c.style.top='0px';const w=c.offsetWidth,h=c.offsetHeight;let l=x,t=y;
+  if(l+w>innerWidth-8)l=x-w;if(t+h>innerHeight-8)t=y-h;l=Math.max(8,Math.min(l,innerWidth-w-8));t=Math.max(8,Math.min(t,innerHeight-h-8));c.style.left=l+'px';c.style.top=t+'px'}
+ CX.t=Date.now();CX.open=true;const f=c.querySelector('button:not(.off)');if(f)f.focus({preventScroll:true})}
+
+const TXT=/^(text|email|password|number|search|tel|url)$/;
+function cxEdit(el){const pw=el.type=='password',ro=el.readOnly||el.disabled;let canSel=false;try{canSel=el.selectionStart!=null}catch(e){}
+ const txt=canSel?el.value.slice(el.selectionStart,el.selectionEnd):el.value,has=!!txt,prep=()=>{el.focus();if(!canSel)el.select()};
+ return{items:[
+  {t:'Recortar',i:'cut',off:pw||ro||!has,f:()=>{clip(txt,'Recortado');prep();document.execCommand('delete')}},
+  {t:'Copiar',i:'copy',off:pw||!has,f:()=>clip(txt)},
+  {t:'Colar',i:'paste',off:ro,f:()=>{(navigator.clipboard&&navigator.clipboard.readText?navigator.clipboard.readText():Promise.reject()).then(v=>{el.focus();if(!document.execCommand('insertText',false,v)){try{el.setRangeText(v,el.selectionStart,el.selectionEnd,'end');el.dispatchEvent(new Event('input',{bubbles:true}))}catch(e){}}},()=>toast('Permita o acesso à área de transferência para colar'))}},
+  {sep:1},
+  {t:'Selecionar tudo',i:'sel',off:!el.value,f:()=>{el.focus();el.select()}}]}}
+
+function cxAluno(id){const a=S.alunos.find(x=>x.id==id);if(!a)return null;const pro=V.role=='pro',acad=V.role=='acad',tel=telOk(a.tel),it=[];
+ it.push({t:'Ver acompanhamento',i:'eye',f:()=>{V.modal=a.id;render()}});
+ if(pro&&a.ativo)it.push({t:'Montar treino',i:'dumb',f:()=>{V.aluno=a.id;V.tab='treinos';render()}});
+ if(pro)it.push({t:'Enviar treino de hoje (WhatsApp)',i:'chat',off:!tel,f:()=>abrirUrl(waUrl(a.tel,treinoTxt(a,new Date().getDay())))});
+ it.push({t:'Abrir WhatsApp',i:'chat',off:!tel,f:()=>abrirUrl(waUrl(a.tel))});
+ if(pro&&a.ativo)it.push({t:pres(a.id)?'Desfazer presença de hoje':'Fazer check-in',i:'check',f:()=>togglePres(a.id)});
+ it.push({sep:1});
+ it.push(a.perfil?{t:'Gerar nova senha',i:'key',f:()=>novaSenhaAluno(a.id)}:{t:'Criar acesso',i:'key',f:()=>{V.acesso=a.id;render()}});
+ if(acad)S.profs.filter(p=>p.id!=a.prof).forEach(p=>it.push({t:'Transferir para '+p.nome,i:'users',f:()=>setProf(a.id,p.id)}));
+ it.push({t:a.ativo?'Inativar aluno':'Ativar aluno',i:a.ativo?'close':'ok',danger:a.ativo,f:()=>togAluno(a.id)});
+ it.push({sep:1},{t:'Copiar nome',i:'copy',f:()=>clip(a.nome)},{t:'Copiar WhatsApp',i:'copy',off:!tel,f:()=>clip(a.tel)});
+ return{head:a.nome,items:it}}
+function cxData(key){const[k,id]=key.split(':');
+ switch(k){
+  case 'aluno':return cxAluno(id);
+  case 'prof':{const p=S.profs.find(x=>x.id==id);if(!p)return null;return{head:p.nome,items:[{t:'Abrir WhatsApp',i:'chat',off:!telOk(p.tel),f:()=>abrirUrl(waUrl(p.tel))},{sep:1},{t:'Copiar nome',i:'copy',f:()=>clip(p.nome)},{t:'Copiar WhatsApp',i:'copy',off:!telOk(p.tel),f:()=>clip(p.tel)}]}}
+  case 'exp':{const e=findEx(id);if(!e)return null;return{head:e.n,items:[{t:'Trocar foto',i:'cam',f:()=>fotoEx(e.id)},{t:'Copiar nome',i:'copy',f:()=>clip(e.n)},{sep:1},{t:'Remover do treino',i:'trash',danger:1,f:()=>delEx(e.id)}]}}
+  case 'exa':{const e=findEx(id);if(!e)return null;const ok=(S.done[K(new Date())+'|'+V.uid]||[]).includes(e.id);return{head:e.n,items:[{t:ok?'Desmarcar como concluído':'Marcar como concluído',i:'ok',f:()=>togDone(e.id)},{t:'Copiar nome',i:'copy',f:()=>clip(e.n)}]}}
+  case 'dia':{const d=+id,A=S.alunos.find(x=>x.id==V.aluno);return{head:DAYS[d],items:[{t:'Abrir '+DAYS[d],i:'dumb',f:()=>{V.dia=d;render()}},...(A?[{t:'Enviar treino de '+DS[d]+' (WhatsApp)',i:'chat',off:!telOk(A.tel),f:()=>abrirUrl(waUrl(A.tel,treinoTxt(A,d)))}]:[])]}}
+  case 'hero':{const a=S.alunos.find(x=>x.id==V.uid);if(!a)return null;const p=profOf(a);return{head:a.nome,items:[{t:'WhatsApp do professor',i:'chat',off:!telOk(p.tel),f:()=>abrirUrl(waUrl(p.tel,'Olá, '+p.nome+'! Aqui é '+a.nome+'.'))},{t:pres(a.id)?'Desfazer presença':'Fazer check-in',i:'check',f:()=>togglePres(a.id)}]}}
+  case 'cred':{const c=V.cred;if(!c)return null;return{head:c.nome,items:[{t:'Copiar dados de acesso',i:'copy',f:copiarAcesso},{t:'Enviar pelo WhatsApp',i:'chat',off:!telOk(c.tel),f:()=>abrirUrl(waUrl(c.tel,c.txt))}]}}
+ }return null}
+function cxGeral(){const R={acad:NA,pro:NP,aluno:NS}[V.role],al=S.alunos.find(x=>x.id==V.uid);
+ return{head:(V.role=='aluno'?al&&al.nome:V.nome)||'MOVEFIT',items:[
+  ...R.map(n=>({t:n[1],i:V.tab==n[0]?'ok':n[2],f:()=>go(n[0])})),{sep:1},
+  {t:'Atualizar dados',i:'refresh',f:atualizar},{t:'Alterar senha',i:'key',f:()=>{V.senha=1;render()}},{sep:1},
+  {t:'Sair',i:'out',danger:1,f:sair}]}}
+function cxFor(t){
+ const inp=t.closest&&t.closest('input,textarea');
+ if(inp&&(inp.tagName=='TEXTAREA'||TXT.test(inp.type)))return cxEdit(inp);
+ if(!V.role)return null;
+ const h=t.closest('[data-ctx]'),sel=String(getSelection()).trim();let m=null;
+ if(h)m=cxData(h.dataset.ctx);
+ else if(t.closest('.mod'))m={items:V.modal?[{t:'Fechar',i:'close',f:()=>{V.modal=null;render()}}]:[]};
+ else{const a=t.closest('a[href]');m=a?{head:'Link',items:[{t:'Abrir link',i:'chat',f:()=>abrirUrl(a.href)},{t:'Copiar link',i:'copy',f:()=>clip(a.href)}]}:cxGeral()}
+ if(!m)return null;
+ if(sel)m.items.push({sep:1},{t:'Copiar seleção',i:'copy',f:()=>clip(sel)});
+ return m}
+function cxOpen(t,x,y){const m=cxFor(t);if(!m)return false;m.items=tidy(m.items);if(!m.items.length)return false;cxShow(m,x,y);return true}
+
+/* botão direito, tecla de menu e Shift+F10 */
+addEventListener('contextmenu',e=>{e.preventDefault();
+ if(CX.touch&&CX.open&&Date.now()-CX.t<900)return;
+ let t=e.target;
+ if(t===$('#ctxbk')||$('#ctx').contains(t)){const bk=t===$('#ctxbk');cxClose();if(!bk)return;t=document.elementFromPoint(e.clientX,e.clientY);if(!t)return}
+ let x=e.clientX,y=e.clientY;
+ if(!x&&!y&&t.getBoundingClientRect){const r=t.getBoundingClientRect();x=r.left+Math.min(r.width/2,40);y=r.bottom-4}
+ CX.touch=false;if(!cxOpen(t,x,y))cxClose()},true);
+/* toque longo (iOS não dispara contextmenu) */
+let lpT=null,lpXY=[0,0];
+addEventListener('touchstart',e=>{CX.hold=false;clearTimeout(lpT);if(e.touches.length!=1)return;const p=e.touches[0],tg=e.target;lpXY=[p.clientX,p.clientY];
+ lpT=setTimeout(()=>{lpT=null;if(CX.open&&Date.now()-CX.t<900)return;CX.touch=true;if(cxOpen(tg,lpXY[0],lpXY[1]))CX.hold=true},480)},{passive:true});
+addEventListener('touchmove',e=>{const p=e.touches[0];if(lpT&&Math.hypot(p.clientX-lpXY[0],p.clientY-lpXY[1])>10){clearTimeout(lpT);lpT=null}},{passive:true});
+['touchend','touchcancel'].forEach(n=>addEventListener(n,e=>{clearTimeout(lpT);lpT=null;if(CX.hold){CX.hold=false;if(e.cancelable)e.preventDefault()}},{passive:false}));
+/* fechar */
+$('#ctxbk').addEventListener('click',cxClose);
+$('#ctxbk').addEventListener('wheel',cxClose,{passive:true});
+addEventListener('scroll',e=>{if(CX.open&&!$('#ctx').contains(e.target))cxClose()},true);
+addEventListener('resize',cxClose);addEventListener('blur',cxClose);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)cxClose()});
+addEventListener('keydown',e=>{if(!CX.open)return;const bs=[...$('#ctx').querySelectorAll('button:not(.off)')],i=bs.indexOf(document.activeElement),go=n=>{e.preventDefault();if(bs.length)bs[(n+bs.length)%bs.length].focus()};
+ if(e.key=='Escape'){e.preventDefault();cxClose()}else if(e.key=='ArrowDown')go(i+1);else if(e.key=='ArrowUp')go(i<0?-1:i-1);else if(e.key=='Home')go(0);else if(e.key=='End')go(-1);else if(e.key=='Tab')cxClose()},true);
+document.addEventListener('dragstart',e=>{if(e.target.tagName=='IMG')e.preventDefault()});
 
 /* ===== Estrutura ===== */
 function login(){const r=once('icon');return`<div class="lg ${once('lg')?'fade':''}"><div class="box"><div class="tile ${r?'pop':''}" style="color:#fff">${LG(54,3.4,r?'run':'')}</div><h2>MOVEFIT</h2><p>Treino, presença e evolução em um só lugar</p>
