@@ -177,7 +177,7 @@ const empty=()=>({academia:{nome:'MOVEFIT',tel:''},profs:[],alunos:[],plano:{},p
 try{localStorage.removeItem('movefit.v2')}catch(e){}
 let S=Object.assign(empty(),DB.load()||{});
 let V={role:null,tab:'',dia:new Date().getDay(),uid:0,pid:0,aluno:0,modal:null};
-const save=()=>DB.save(S);
+const save=()=>DB.save({map:S.map,nid:S.nid});
 function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2200)}
 
 /* ===== Regras ===== */
@@ -189,7 +189,11 @@ const mes=id=>{let n=0;for(let o=-27;o<=0;o++)if(pres(id,o))n++;return n};
 const ult=id=>{for(let o=0;o>-30;o--)if(pres(id,o))return -o;return 30};
 const dv=a=>Math.round((new Date(a.venc+'T00:00')-new Date(K(new Date())+'T00:00'))/864e5);
 const seq=id=>{let n=0;for(let o=0;o>-28;o--){if(D(o).getDay()==0)continue;if(pres(id,o))n++;else if(o<0)break}return n};
-function togglePres(id){const k=K(new Date()),l=S.pres[k]=S.pres[k]||[];const i=l.indexOf(id);i>=0?l.splice(i,1):l.push(id);save();render();toast(i>=0?'Presença removida':'Check-in registrado')}
+async function togglePres(id){const a=S.alunos.find(x=>x.id==id),k=K(new Date()),l=S.pres[k]=S.pres[k]||[],i=l.indexOf(id),rem=i>=0;
+ rem?l.splice(i,1):l.push(id);render();
+ const r=rem?await sb.from('mf_presencas').delete().eq('aluno_id',a.sb).eq('dia',k):await sb.from('mf_presencas').upsert({aluno_id:a.sb,dia:k},{onConflict:'aluno_id,dia',ignoreDuplicates:true});
+ if(r.error){rem?l.push(id):l.splice(l.indexOf(id),1);render();return toast('Não foi possível salvar: '+r.error.message)}
+ toast(rem?'Presença removida':'Check-in registrado')}
 const ult2=id=>{const u=ult(id);return u==0?'Hoje':u>=30?'30+ dias':'há '+u+' d'};
 const dots=id=>`<span class="dots">${[-6,-5,-4,-3,-2,-1,0].map(o=>`<i class="${pres(id,o)?'on':''}"></i>`).join('')}</span>`;
 const heat=id=>`<div class="heat">${Array.from({length:28},(_,i)=>`<i class="${pres(id,i-27)?'on':''}" title="${fd(K(D(i-27)))}"></i>`).join('')}</div>`;
@@ -276,16 +280,25 @@ async function addAluno(){const n=$('#nn').value.trim();if(!n)return toast('Info
  busy=false;if(error)return toast('Não foi possível cadastrar: '+error.message);
  const id=S.map[data.id]=++S.nid;S.alunos.push({id,sb:data.id,perfil:null,nome:n,tel:tel||'—',plano:data.plano,venc:data.vencimento,obj:data.objetivo,ativo:data.ativo!==false,prof});
  S.alunos.sort((m,k)=>m.nome.localeCompare(k.nome,'pt-BR'));
- const w=parseFloat($('#nw').value);S.pesos[id]=w?[w]:[];save();render();toast('Aluno cadastrado')}
+ const w=Math.round(parseFloat($('#nw').value)*10)/10;S.pesos[id]=[];if(w){const r=await sb.from('mf_pesos').insert({aluno_id:data.id,kg:w});if(!r.error)S.pesos[id]=[w]}save();render();toast('Aluno cadastrado')}
 async function togAluno(id){const a=S.alunos.find(x=>x.id==id);a.ativo=!a.ativo;render();
  const{error}=await sb.from('alunos').update({ativo:a.ativo}).eq('id',a.sb);
  if(error){a.ativo=!a.ativo;render();return toast('Não foi possível salvar: '+error.message)}save()}
-function addEx(){const n=$('#en').value.trim();if(!n)return toast('Informe o exercício');const f=$('#ef').files[0],go=foto=>{pl(V.aluno,V.dia).push({id:++S.xid,n,s:+$('#es').value||3,r:$('#er').value||'10',c:$('#ec').value||'—',foto});save();render();toast('Exercício adicionado')};f?readImg(f,go):go('')}
-function delEx(id){const p=S.plano[V.aluno];p[V.dia]=p[V.dia].filter(e=>e.id!=id);save();render()}
+function addEx(){const n=$('#en').value.trim();if(!n)return toast('Informe o exercício');const f=$('#ef').files[0],A=S.alunos.find(x=>x.id==V.aluno),dia=V.dia,sr=+$('#es').value||3,rp=$('#er').value||'10',cg=$('#ec').value||'—';
+ const go=async foto=>{const{data,error}=await sb.from('mf_exercicios').insert({aluno_id:A.sb,dia,nome:n,series:sr,reps:rp,carga:cg,foto:foto||null}).select('id').single();
+  if(error)return toast('Não foi possível salvar: '+error.message);
+  pl(A.id,dia).push({id:+data.id,n,s:sr,r:rp,c:cg,foto:foto||''});render();toast('Exercício adicionado')};f?readImg(f,go):go('')}
+async function delEx(id){const{error}=await sb.from('mf_exercicios').delete().eq('id',id);if(error)return toast('Não foi possível remover: '+error.message);const p=S.plano[V.aluno];p[V.dia]=p[V.dia].filter(e=>e.id!=id);render()}
 function fotoEx(id){V.fx=id;$('#fx').click()}
-$('#fx').onchange=ev=>{const f=ev.target.files[0];if(!f)return;readImg(f,d=>{Object.values(S.plano[V.aluno]).flat().filter(e=>e.id==V.fx).forEach(e=>e.foto=d);save();render();toast('Foto atualizada')});ev.target.value=''};
-function togDone(id){const k=K(new Date())+'|'+V.uid,l=S.done[k]=S.done[k]||[],i=l.indexOf(id);i>=0?l.splice(i,1):l.push(id);if(l.length&&!pres(V.uid)){const t=K(new Date());(S.pres[t]=S.pres[t]||[]).push(V.uid)}save();render()}
-function addPeso(){const w=parseFloat($('#pw').value);if(!w)return toast('Informe o peso');S.pesos[V.uid].push(w);save();render()}
+$('#fx').onchange=ev=>{const f=ev.target.files[0];if(!f)return;readImg(f,async d=>{const{error}=await sb.from('mf_exercicios').update({foto:d}).eq('id',V.fx);if(error)return toast('Não foi possível salvar a foto: '+error.message);Object.values(S.plano[V.aluno]).flat().filter(e=>e.id==V.fx).forEach(e=>e.foto=d);render();toast('Foto atualizada')});ev.target.value=''};
+async function togDone(id){const a=S.alunos.find(x=>x.id==V.uid),t=K(new Date()),k=t+'|'+V.uid,l=S.done[k]=S.done[k]||[],i=l.indexOf(id),rem=i>=0,novaPres=!rem&&!pres(V.uid);
+ rem?l.splice(i,1):l.push(id);if(novaPres)(S.pres[t]=S.pres[t]||[]).push(V.uid);render();
+ let r=rem?await sb.from('mf_feitos').delete().eq('aluno_id',a.sb).eq('dia',t).eq('exercicio_id',id):await sb.from('mf_feitos').insert({aluno_id:a.sb,dia:t,exercicio_id:id});
+ if(!r.error&&novaPres)r=await sb.from('mf_presencas').upsert({aluno_id:a.sb,dia:t},{onConflict:'aluno_id,dia',ignoreDuplicates:true});
+ if(r.error){rem?l.push(id):l.splice(l.indexOf(id),1);if(novaPres)S.pres[t].splice(S.pres[t].indexOf(V.uid),1);render();toast('Não foi possível salvar: '+r.error.message)}}
+async function addPeso(){const w=Math.round(parseFloat($('#pw').value)*10)/10;if(!w)return toast('Informe o peso');const a=S.alunos.find(x=>x.id==V.uid);
+ const{error}=await sb.from('mf_pesos').insert({aluno_id:a.sb,kg:w});if(error)return toast('Não foi possível salvar: '+error.message);
+ (S.pesos[V.uid]=S.pesos[V.uid]||[]).push(w);render()}
 /* entrar() fica na seção de autenticação */
 /* sair() fica na seção de autenticação */
 const go=t=>{V.tab=t;render()};
@@ -339,13 +352,23 @@ async function sincronizar(user,pf,R){
   if(R=='pro'&&!S.profs.some(x=>x.sb==user.id))S.profs.push({id:lid(user.id),sb:user.id,nome:pf.nome,tel:'—'});
   S.alunos=(a.data||[]).map(x=>({id:lid(x.id),sb:x.id,perfil:x.perfil_id,nome:x.nome||'Aluno',tel:x.whatsapp||'—',plano:x.plano||'Mensal',venc:x.vencimento||K(D(30)),obj:x.objetivo||'—',ativo:x.ativo!==false,prof:lid(x.profissional_id)})).sort((m,n)=>m.nome.localeCompare(n.nome,'pt-BR'));
   S.academia={nome:(c.data&&c.data[0]&&c.data[0].nome)||'MOVEFIT',tel:''};
+  S.plano={};S.pres={};S.done={};S.pesos={};
+  const byDb={};S.alunos.forEach(x=>byDb[x.sb]=x.id);
+  const pega=async mk=>{let o=[],i=0;for(;;){const r=await mk().range(i,i+999);if(r.error)return r;o=o.concat(r.data||[]);if((r.data||[]).length<1000)return{data:o};i+=1000}};
+  const hoje=K(new Date());
+  const[ex,pr,fe,pe]=await Promise.all([pega(()=>sb.from('mf_exercicios').select('*').order('id')),pega(()=>sb.from('mf_presencas').select('aluno_id,dia').gte('dia',K(D(-30))).order('dia')),pega(()=>sb.from('mf_feitos').select('aluno_id,exercicio_id').eq('dia',hoje).order('exercicio_id')),pega(()=>sb.from('mf_pesos').select('aluno_id,kg').order('dia').order('id'))]);
+  const er=[ex,pr,fe,pe].find(r=>r.error);if(er)toast('Treinos não carregaram. Rode o script 06 no Supabase. ('+er.error.message+')');
+  (ex.data||[]).forEach(x=>{const i=byDb[x.aluno_id];if(i)pl(i,x.dia).push({id:+x.id,n:x.nome,s:x.series,r:x.reps,c:x.carga,foto:x.foto||''})});
+  (pr.data||[]).forEach(x=>{const i=byDb[x.aluno_id];if(i)(S.pres[x.dia]=S.pres[x.dia]||[]).push(i)});
+  (fe.data||[]).forEach(x=>{const i=byDb[x.aluno_id];if(i)(S.done[hoje+'|'+i]=S.done[hoje+'|'+i]||[]).push(+x.exercicio_id)});
+  (pe.data||[]).forEach(x=>{const i=byDb[x.aluno_id];if(i)(S.pesos[i]=S.pesos[i]||[]).push(+x.kg)});
  }catch(e){toast('Erro ao carregar dados: '+(e.message||e))}
  V.pid=R=='pro'?lid(user.id):0;
  const eu=S.alunos.find(x=>x.perfil&&x.perfil==user.id);V.uid=eu?eu.id:0;save()}
 async function abrir(user){const{data:pf,error}=await sb.from('perfis').select('nome,papel,academia_id').eq('id',user.id).maybeSingle();
  await splashWait();const R={academia:'acad',profissional:'pro',aluno:'aluno'}[pf&&pf.papel];
  if(error||!R){await sb.auth.signOut();render();return setMsg(error?'Não foi possível ler seu perfil. Verifique se o SQL do banco foi executado.':'Sua conta ainda não tem perfil de acesso. Fale com a academia.')}
- await sincronizar(user,pf,R);
+ await sincronizar(user,pf,R);V.sess={user,pf,R};V.last=Date.now();
  if(R=='aluno'&&!V.uid){await sb.auth.signOut();V.role=null;render();return setMsg('Não encontramos seu cadastro de aluno. Fale com o professor.')}
  V.acadId=pf.academia_id;V.role=R;V.nome=pf.nome;V.tab=R=='aluno'?'hoje':'painel';V.dia=new Date().getDay();render()}
 async function esqueci(){const e=$('#le').value.trim();if(!e)return setMsg('Digite seu e-mail acima e toque novamente.');
@@ -362,6 +385,7 @@ async function boot(){const a=$('#app');
  if(/type=recovery/.test(location.hash))return;
  try{const{data}=await sb.auth.getSession();if(data.session)return await abrir(data.session.user)}catch(e){}
  await splashWait();render()}
+document.addEventListener('visibilitychange',async()=>{if(document.hidden||!V.role||!V.sess||V.modal||busy||Date.now()-V.last<20000)return;V.last=Date.now();await sincronizar(V.sess.user,V.sess.pf,V.sess.R);render()});
 boot();
 </script>
 </body>
