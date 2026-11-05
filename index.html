@@ -291,7 +291,7 @@ async function addAluno(){const n=$('#nn').value.trim();if(!n)return toast('Info
  S.alunos.sort((m,k)=>m.nome.localeCompare(k.nome,'pt-BR'));
  const w=Math.round(parseFloat($('#nw').value)*10)/10;S.pesos[id]=[];if(w){const r=await sb.from('mf_pesos').insert({aluno_id:data.id,kg:w});if(!r.error)S.pesos[id]=[w]}
  if(senha)mostrarAcesso(al,email,senha,'Aluno e acesso criados');save();render();toast(senha?'Aluno cadastrado com acesso':'Aluno cadastrado')}
-const acessoCell=a=>a.perfil?`<span class="tag">Com acesso</span> <button class="btn" onclick="novaSenhaAluno(${a.id})">Nova senha</button>`:`<button class="btn" onclick="V.acesso=${a.id};render()">Criar acesso</button>`;
+const acessoCell=a=>a.perfil?`<span title="Com acesso" aria-label="Com acesso" style="display:inline-flex;vertical-align:middle;margin-right:6px"><svg viewBox="0 0 24 24" style="width:22px;height:22px"><circle cx="12" cy="12" r="10" fill="var(--ok)" stroke="none"/><path d="M7.5 12.5l3 3 6-6.5" stroke="var(--tc)" stroke-width="2.4"/></svg></span><button class="btn" onclick="novaSenhaAluno(${a.id})">Nova senha</button>`:`<button class="btn" onclick="V.acesso=${a.id};render()">Criar acesso</button>`;
 async function criarAcesso(){const a=S.alunos.find(x=>x.id==V.acesso),email=($('#ae').value||'').trim().toLowerCase();if(!email)return toast('Informe o e-mail do aluno');if(busy)return;busy=true;
  const r=await fnAluno({acao:'criar',aluno_id:a.sb,email});busy=false;if(r.erro)return toast(r.erro);
  a.perfil=r.data.aluno.perfil_id;V.acesso=null;mostrarAcesso(a,r.data.email,r.data.senha,'Acesso criado');render()}
@@ -300,9 +300,13 @@ async function novaSenhaAluno(id){const a=S.alunos.find(x=>x.id==id);if(busy||!c
 function copiarAcesso(){navigator.clipboard.writeText(V.cred.txt).then(()=>toast('Copiado'),()=>toast('Não foi possível copiar'))}
 const acessoModal=()=>{const a=S.alunos.find(x=>x.id==V.acesso);return`<div class="mod"><div class="card"><h3 style="font-size:17px">Criar acesso · ${esc(a.nome)}</h3><p class="hint">O aluno entra com este e-mail e uma senha provisória gerada agora. Ele só vê o próprio treino.</p><div class="frm"><input id="ae" type="email" autocapitalize="off" placeholder="E-mail do aluno"></div><div class="frm"><button class="btn p" onclick="criarAcesso()">Criar acesso</button><button class="btn" onclick="V.acesso=null;render()">Cancelar</button></div></div></div>`};
 const credModal=()=>{const c=V.cred;return`<div class="mod"><div class="card"><h3 style="font-size:17px">${esc(c.titulo)}</h3><p class="hint">Envie agora: a senha provisória só aparece desta vez.</p><div class="row"><span>Aluno</span><b>${esc(c.nome)}</b></div><div class="row"><span>E-mail</span><b>${esc(c.email)}</b></div><div class="row"><span>Senha</span><b style="font-family:monospace;font-size:19px;letter-spacing:1px">${esc(c.senha)}</b></div><div class="frm" style="margin-top:14px"><a class="btn p" href="${waUrl(c.tel,c.txt)}" target="_blank" rel="noopener">Enviar pelo WhatsApp</a><button class="btn" onclick="copiarAcesso()">Copiar</button></div><button class="btn g" style="margin-top:10px" onclick="V.cred=null;render()">Fechar</button></div></div>`};
-async function togAluno(id){const a=S.alunos.find(x=>x.id==id);a.ativo=!a.ativo;render();
- const{error}=await sb.from('alunos').update({ativo:a.ativo}).eq('id',a.sb);
- if(error){a.ativo=!a.ativo;render();return toast('Não foi possível salvar: '+error.message)}save()}
+async function togAluno(id){const a=S.alunos.find(x=>x.id==id);if(busy)return;const novo=!a.ativo;
+ if(!novo&&a.perfil&&!confirm('Inativar '+a.nome+'? Ele não conseguirá mais entrar no app até ser ativado de novo.'))return;
+ busy=true;let erro=null;
+ if(a.perfil){const r=await fnAluno({acao:'status',aluno_id:a.sb,ativo:novo});erro=r.erro}
+ else{const r=await sb.from('alunos').update({ativo:novo}).eq('id',a.sb);erro=r.error&&r.error.message}
+ busy=false;if(erro)return toast('Não foi possível salvar: '+erro);
+ a.ativo=novo;render();toast(novo?'Aluno ativado':'Aluno inativado, login bloqueado')}
 function addEx(){const n=$('#en').value.trim();if(!n)return toast('Informe o exercício');const f=$('#ef').files[0],A=S.alunos.find(x=>x.id==V.aluno),dia=V.dia,sr=+$('#es').value||3,rp=$('#er').value||'10',cg=$('#ec').value||'—';
  const go=async foto=>{const{data,error}=await sb.from('mf_exercicios').insert({aluno_id:A.sb,dia,nome:n,series:sr,reps:rp,carga:cg,foto:foto||null}).select('id').single();
   if(error)return toast('Não foi possível salvar: '+error.message);
@@ -354,7 +358,7 @@ const AU={keep:lsGet(KEEP)!='0',email:''};
 const T0=Date.now(),splashWait=()=>new Promise(r=>setTimeout(r,Math.max(0,1100-(Date.now()-T0))));
 const setMsg=(t,ok)=>{const e=$('.er');if(e){e.textContent=t;e.className='er'+(ok?' ok':'')}};
 const toggleKeep=b=>{AU.keep=!AU.keep;b.classList.toggle('on',AU.keep);b.setAttribute('aria-checked',AU.keep)};
-const msgErr=e=>{const m=String(e&&e.message||e);return/invalid login/i.test(m)?'E-mail ou senha incorretos.':/not confirmed/i.test(m)?'Confirme seu e-mail antes de entrar.':/rate limit|too many/i.test(m)?'Muitas tentativas. Aguarde um pouco.':/network|fetch/i.test(m)?'Sem conexão com o servidor.':/password/i.test(m)?'Senha inválida: use pelo menos 6 caracteres.':'Erro: '+m};
+const msgErr=e=>{const m=String(e&&e.message||e);return/banned/i.test(m)?MSG_INATIVO:/invalid login/i.test(m)?'E-mail ou senha incorretos.':/not confirmed/i.test(m)?'Confirme seu e-mail antes de entrar.':/rate limit|too many/i.test(m)?'Muitas tentativas. Aguarde um pouco.':/network|fetch/i.test(m)?'Sem conexão com o servidor.':/password/i.test(m)?'Senha inválida: use pelo menos 6 caracteres.':'Erro: '+m};
 async function entrar(){const e=$('#le').value.trim(),p=$('#lp').value;AU.email=e;if(!e||!p)return setMsg('Informe e-mail e senha.');
  const b=$('.lg .btn');b.disabled=true;b.textContent='Entrando…';setMsg('');
  try{localStorage.setItem(KEEP,AU.keep?'1':'0')}catch(x){}
@@ -384,10 +388,15 @@ async function sincronizar(user,pf,R){
  }catch(e){toast('Erro ao carregar dados: '+(e.message||e))}
  V.pid=R=='pro'?lid(user.id):0;
  const eu=S.alunos.find(x=>x.perfil&&x.perfil==user.id);V.uid=eu?eu.id:0;save()}
-async function abrir(user){const{data:pf,error}=await sb.from('perfis').select('nome,papel,academia_id').eq('id',user.id).maybeSingle();
- await splashWait();const R={academia:'acad',profissional:'pro',aluno:'aluno'}[pf&&pf.papel];
+const MSG_INATIVO='Seu acesso está inativo. Fale com seu professor.';
+const inativo=()=>{const e=S.alunos.find(x=>x.id==V.uid);return !!e&&!e.ativo};
+async function abrir(user){const{data:pf,error}=await sb.from('perfis').select('nome,papel,academia_id,ativo').eq('id',user.id).maybeSingle();
+ await splashWait();
+ if(pf&&pf.ativo===false){await sb.auth.signOut();V.role=null;render();return setMsg(MSG_INATIVO)}
+ const R={academia:'acad',profissional:'pro',aluno:'aluno'}[pf&&pf.papel];
  if(error||!R){await sb.auth.signOut();render();return setMsg(error?'Não foi possível ler seu perfil. Verifique se o SQL do banco foi executado.':'Sua conta ainda não tem perfil de acesso. Fale com a academia.')}
  await sincronizar(user,pf,R);V.sess={user,pf,R};V.last=Date.now();
+ if(R=='aluno'&&inativo()){await sb.auth.signOut();V.role=null;render();return setMsg(MSG_INATIVO)}
  if(R=='aluno'&&!V.uid){await sb.auth.signOut();V.role=null;render();return setMsg('Não encontramos seu cadastro de aluno. Fale com o professor.')}
  V.acadId=pf.academia_id;V.role=R;V.nome=pf.nome;V.tab=R=='aluno'?'hoje':'painel';V.dia=new Date().getDay();render()}
 async function esqueci(){const e=$('#le').value.trim();if(!e)return setMsg('Digite seu e-mail acima e toque novamente.');
@@ -404,7 +413,7 @@ async function boot(){const a=$('#app');
  if(/type=recovery/.test(location.hash))return;
  try{const{data}=await sb.auth.getSession();if(data.session)return await abrir(data.session.user)}catch(e){}
  await splashWait();render()}
-document.addEventListener('visibilitychange',async()=>{if(document.hidden||!V.role||!V.sess||V.modal||V.acesso||V.cred||busy||Date.now()-V.last<20000)return;V.last=Date.now();await sincronizar(V.sess.user,V.sess.pf,V.sess.R);render()});
+document.addEventListener('visibilitychange',async()=>{if(document.hidden||!V.role||!V.sess||V.modal||V.acesso||V.cred||busy||Date.now()-V.last<20000)return;V.last=Date.now();await sincronizar(V.sess.user,V.sess.pf,V.sess.R);if(V.sess.R=='aluno'&&inativo()){V.role=null;await sb.auth.signOut();render();return setMsg(MSG_INATIVO)}render()});
 boot();
 </script>
 </body>
