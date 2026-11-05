@@ -13,14 +13,16 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MOVEFIT">
 <style>
-:root{--bg:#f1f3f6;--sf:#fff;--tx:#14181f;--mu:#6b7280;--bd:#e3e6eb;--pr:#0f766e;--prt:#fff;--ok:#16a34a;--wa:#b45309;--ba:#dc2626;--okb:#dcfce7;--wab:#fef3c7;--bab:#fee2e2;--nv:#0b1220;--tint:#e6f6f4;--tc:#fff;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root{--bg:#f1f3f6;--sf:#fff;--tx:#14181f;--mu:#6b7280;--bd:#e3e6eb;--pr:#0f766e;--prt:#fff;--ok:#16a34a;--wa:#b45309;--ba:#dc2626;--okb:#dcfce7;--wab:#fef3c7;--bab:#fee2e2;--nv:#0b1220;--tint:#e6f6f4;--tc:#fff;color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c0f14;--sf:#171b22;--tx:#eef0f3;--mu:#98a1b0;--bd:#262c36;--pr:#2dd4bf;--prt:#042f2a;--ok:#4ade80;--wa:#fbbf24;--ba:#f87171;--okb:#12301d;--wab:#3a2c0b;--bab:#3b1515;--tint:#0f2a28;--tc:#0b1220;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#0c0f14;--sf:#171b22;--tx:#eef0f3;--mu:#98a1b0;--bd:#262c36;--pr:#2dd4bf;--prt:#042f2a;--ok:#4ade80;--wa:#fbbf24;--ba:#f87171;--okb:#12301d;--wab:#3a2c0b;--bab:#3b1515;--tint:#0f2a28;--tc:#0b1220;color-scheme:dark}
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
+html,body{min-height:100%;height:100%;margin:0}
+html{background:var(--bg)}
+html:has(.lg){background:#0b1220}
 body{background:var(--bg);color:var(--tx);font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
-.app{display:flex;height:100%}
+.app{display:flex;height:100%;height:100dvh}
 nav{width:236px;background:var(--nv);color:#94a3b8;padding:18px 12px;display:flex;flex-direction:column;gap:6px;flex-shrink:0;overflow-y:auto}
 .brand{display:flex;align-items:center;gap:10px;padding:2px 8px 18px;color:#fff;font-weight:800;font-size:16px;letter-spacing:.02em}
 .brand i{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#14b8a6,#0f766e);display:grid;place-items:center}
@@ -33,7 +35,7 @@ nav button.lgo{justify-content:center;margin-top:4px;color:#fca5a5;border:1px so
 .usr{display:flex;gap:10px;align-items:center;padding:12px;border-radius:12px;background:rgba(255,255,255,.06);color:#fff}
 .usr b{width:34px;height:34px;border-radius:50%;background:#14b8a6;display:grid;place-items:center;color:#04201c}
 .usr small{display:block;color:#64748b}
-main{flex:1;overflow:auto;padding:18px;min-width:0}
+main{flex:1;overflow:auto;padding:18px;padding-top:calc(18px + env(safe-area-inset-top,0px));min-width:0}
 .top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
 h1{font-size:20px;margin:0;flex:1;min-width:120px}
 h3{margin:0 0 10px;font-size:14px}
@@ -78,7 +80,7 @@ tr.cl{cursor:pointer}tr.cl:hover{background:var(--tint)}
 .mod{position:fixed;inset:0;background:rgba(0,0,0,.56);display:flex;align-items:center;justify-content:center;padding:16px;z-index:5}
 .mod .card{width:100%;max-width:440px;max-height:100%;overflow:auto}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:9;display:none}
-.lg{min-height:100%;display:grid;place-items:center;padding:20px;background:radial-gradient(60% 48% at 50% 38%,rgba(20,184,166,.22),transparent 72%),#0b1220;color:#fff}
+.lg{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:20px;padding-top:calc(20px + env(safe-area-inset-top,0px));padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));background:radial-gradient(60% 48% at 50% 38%,rgba(20,184,166,.22),transparent 72%),#0b1220;color:#fff}
 .lg .box{width:100%;max-width:380px;text-align:center}
 .tile{width:88px;height:88px;border-radius:26px;background:linear-gradient(135deg,#14b8a6,#0f766e);display:grid;place-items:center;margin:0 auto;box-shadow:0 18px 50px rgba(20,184,166,.35),inset 0 1px 0 rgba(255,255,255,.25)}
 .lg h2{font-size:28px;font-weight:800;letter-spacing:.03em;margin:20px 0 4px}
@@ -96,12 +98,31 @@ tr.cl{cursor:pointer}tr.cl:hover{background:var(--tint)}
 .lg .lk{background:none;border:0;color:#5eead4;cursor:pointer;font:inherit;margin-top:14px;padding:6px}
 .lg .er{color:#fca5a5;min-height:20px;margin:12px 0 0;font-size:13px}.lg .er.ok{color:#5eead4}
 .lg .btn:disabled{opacity:.6;cursor:wait}
+
+/* ===== Animação de entrada: o corredor entra correndo ===== */
+.tile,.brand i{overflow:hidden}
+.run{overflow:visible}
+.run .rb{animation:runX 1s cubic-bezier(.2,.7,.25,1) both}
+.run .rl{transform-box:fill-box;transform-origin:100% 50%;animation:runLines 1s ease-out both}
+.run{animation:runBob .22s ease-in-out 4}
+.tile.pop{animation:tilePop .55s cubic-bezier(.34,1.56,.64,1) both,tileRing .8s ease-out .9s}
+.intro h2{animation:fadeUp .6s ease-out .55s both}
+.intro p{animation:fadeUp .6s ease-out .8s both}
+.fade{animation:fadeIn .45s ease-out both}
+@keyframes runX{0%{transform:translateX(-52px);opacity:0}12%{opacity:1}78%{transform:translateX(3px)}100%{transform:translateX(0);opacity:1}}
+@keyframes runBob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-2.4px) rotate(-3deg)}}
+@keyframes runLines{0%{opacity:0;transform:scaleX(.2)}25%{opacity:.95;transform:scaleX(2.6)}70%{opacity:.85;transform:scaleX(2)}100%{opacity:.55;transform:scaleX(1)}}
+@keyframes tilePop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes tileRing{0%{box-shadow:0 18px 50px rgba(20,184,166,.35),inset 0 1px 0 rgba(255,255,255,.25),0 0 0 0 rgba(20,184,166,.5)}100%{box-shadow:0 18px 50px rgba(20,184,166,.35),inset 0 1px 0 rgba(255,255,255,.25),0 0 0 28px rgba(20,184,166,0)}}
+@keyframes fadeUp{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:none}}
+@keyframes fadeIn{0%{opacity:0}100%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.run,.run .rb,.run .rl,.tile.pop,.intro h2,.intro p,.fade{animation:none!important}}
 @media (max-width:760px){
 .app{flex-direction:column-reverse}
-nav{width:auto;flex-direction:row;padding:6px;justify-content:space-around;gap:0}
+nav{width:auto;flex-direction:row;padding:6px;padding-bottom:calc(6px + env(safe-area-inset-bottom,0px));justify-content:space-around;gap:0}
 nav .brand,nav .sp,nav .usr,nav .lb{display:none}
 nav button{flex-direction:column;gap:2px;font-size:10px;padding:6px 4px}
-main{padding:12px}.two{grid-template-columns:1fr}
+main{padding:12px;padding-top:calc(12px + env(safe-area-inset-top,0px))}.two{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -125,8 +146,10 @@ const K=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String
 const fd=k=>k.slice(8)+'/'+k.slice(5,7);
 
 /* ===== Ícones ===== */
-const RUN='<circle cx="30" cy="9" r="4.2" fill="currentColor" stroke="none"/><path d="M28 15L22 28M27.5 18L33.5 23L39 20M26.5 18.5L20 17L15 21M22 28L29 34L28 42M22 28L16 34L9 33"/><path d="M4 14h7M2 21h6" opacity=".55"/>';
-const LG=(s,w=3.4)=>`<svg viewBox="0 0 48 48" style="width:${s}px;height:${s}px;stroke-width:${w}">${RUN}</svg>`;
+const RUN='<g class="rb"><circle cx="30" cy="9" r="4.2" fill="currentColor" stroke="none"/><path d="M28 15L22 28M27.5 18L33.5 23L39 20M26.5 18.5L20 17L15 21M22 28L29 34L28 42M22 28L16 34L9 33"/></g><path class="rl" d="M4 14h7M2 21h6" opacity=".55"/>';
+const LG=(s,w=3.4,c='')=>`<svg class="${c}" viewBox="0 0 48 48" style="width:${s}px;height:${s}px;stroke-width:${w}">${RUN}</svg>`;
+/* animações tocam só na 1ª vez de cada tela (render() recria o HTML a cada clique) */
+const PLAYED={};const once=k=>PLAYED[k]?false:(PLAYED[k]=true);
 const I={home:'<rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>',
 users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 3-6 6.5-6s6.5 2.4 6.5 6M17 4.5a3.5 3.5 0 010 7M21.5 20c0-2.6-1.6-4.6-4-5.5"/>',
 check:'<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3L16.5 9"/>',
@@ -261,18 +284,18 @@ function addPeso(){const w=parseFloat($('#pw').value);if(!w)return toast('Inform
 const go=t=>{V.tab=t;render()};
 
 /* ===== Estrutura ===== */
-function login(){return`<div class="lg"><div class="box"><div class="tile" style="color:#fff">${LG(54)}</div><h2>MOVEFIT</h2><p>Treino, presença e evolução em um só lugar</p>
+function login(){const r=once('icon');return`<div class="lg ${once('lg')?'fade':''}"><div class="box"><div class="tile ${r?'pop':''}" style="color:#fff">${LG(54,3.4,r?'run':'')}</div><h2>MOVEFIT</h2><p>Treino, presença e evolução em um só lugar</p>
  <input id="le" type="email" placeholder="E-mail" autocomplete="username" value="${esc(AU.email)}" onkeydown="if(event.key=='Enter')$('#lp').focus()">
  <input id="lp" type="password" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key=='Enter')entrar()">
  <button class="keep ${AU.keep?'on':''}" type="button" role="checkbox" aria-checked="${AU.keep}" onclick="toggleKeep(this)"><i>${ic('ok',14)}</i>Manter conectado neste aparelho</button>
  <div class="er" role="alert"></div>
  <button class="btn" onclick="entrar()">Entrar</button>
  <button class="lk" onclick="esqueci()">Esqueci minha senha</button></div></div>`}
-function novaSenha(){return`<div class="lg"><div class="box"><div class="tile" style="color:#fff">${LG(54)}</div><h2>Nova senha</h2><p>Escolha uma senha nova para sua conta</p>
+function novaSenha(){const r=once('icon');return`<div class="lg ${once('lg')?'fade':''}"><div class="box"><div class="tile ${r?'pop':''}" style="color:#fff">${LG(54,3.4,r?'run':'')}</div><h2>Nova senha</h2><p>Escolha uma senha nova para sua conta</p>
  <input id="lp" type="password" placeholder="Nova senha (mínimo 6 caracteres)" autocomplete="new-password" onkeydown="if(event.key=='Enter')salvarSenha()">
  <div class="er" role="alert"></div><button class="btn" onclick="salvarSenha()">Salvar senha</button></div></div>`}
 function shell(items,body){const pro=V.role!='aluno',a=S.alunos.find(x=>x.id==V.uid),rl={acad:['Academia',V.nome||S.academia.nome],pro:['Profissional',V.nome||profNome(V.pid)],aluno:['Aluno']}[V.role];
- return`<div class="app"><nav><div class="brand"><i style="color:#fff">${LG(20,3.6)}</i>MOVEFIT</div><div class="lb">${rl[0]}</div>
+ return`<div class="app ${once('app')?'fade':''}"><nav><div class="brand"><i style="color:#fff">${LG(20,3.6)}</i>MOVEFIT</div><div class="lb">${rl[0]}</div>
  ${items.map(i=>`<button class="${V.tab==i[0]?'on':''}" onclick="go('${i[0]}')">${ic(i[2])}<span>${i[1]}</span></button>`).join('')}
  <div class="sp"></div><div class="usr"><b>${esc((pro?rl[1]:a.nome)[0])}</b><div>${esc(pro?rl[1]:a.nome.split(' ')[0])}<small>${pro?rl[0]:esc(a.obj)}</small></div></div>
  <button class="lgo" onclick="sair()">${ic('out',18)}<span>Sair</span></button></nav><main>${body}</main></div>`}
@@ -289,6 +312,7 @@ const store={getItem:k=>{try{return localStorage.getItem(k)??sessionStorage.getI
  removeItem:k=>{try{localStorage.removeItem(k);sessionStorage.removeItem(k)}catch(e){}}};
 const sb=window.supabase?window.supabase.createClient(SB.url,SB.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:store}}):null;
 const AU={keep:lsGet(KEEP)!='0',email:''};
+const T0=Date.now(),splashWait=()=>new Promise(r=>setTimeout(r,Math.max(0,1100-(Date.now()-T0))));
 const setMsg=(t,ok)=>{const e=$('.er');if(e){e.textContent=t;e.className='er'+(ok?' ok':'')}};
 const toggleKeep=b=>{AU.keep=!AU.keep;b.classList.toggle('on',AU.keep);b.setAttribute('aria-checked',AU.keep)};
 const msgErr=e=>{const m=String(e&&e.message||e);return/invalid login/i.test(m)?'E-mail ou senha incorretos.':/not confirmed/i.test(m)?'Confirme seu e-mail antes de entrar.':/rate limit|too many/i.test(m)?'Muitas tentativas. Aguarde um pouco.':/network|fetch/i.test(m)?'Sem conexão com o servidor.':/password/i.test(m)?'Senha inválida: use pelo menos 6 caracteres.':'Erro: '+m};
@@ -299,7 +323,7 @@ async function entrar(){const e=$('#le').value.trim(),p=$('#lp').value;AU.email=
  if(error){b.disabled=false;b.textContent='Entrar';return setMsg(msgErr(error))}
  await abrir(data.user)}
 async function abrir(user){const{data:pf,error}=await sb.from('perfis').select('nome,papel,academia_id').eq('id',user.id).maybeSingle();
- const R={academia:'acad',profissional:'pro',aluno:'aluno'}[pf&&pf.papel];
+ await splashWait();const R={academia:'acad',profissional:'pro',aluno:'aluno'}[pf&&pf.papel];
  if(error||!R){await sb.auth.signOut();render();return setMsg(error?'Não foi possível ler seu perfil. Verifique se o SQL do banco foi executado.':'Sua conta ainda não tem perfil de acesso. Fale com a academia.')}
  V.role=R;V.nome=pf.nome;V.tab=R=='aluno'?'hoje':'painel';V.dia=new Date().getDay();render()}
 async function esqueci(){const e=$('#le').value.trim();if(!e)return setMsg('Digite seu e-mail acima e toque novamente.');
@@ -311,11 +335,11 @@ async function salvarSenha(){const p=$('#lp').value;if(p.length<6)return setMsg(
 async function sair(){V.role=null;V.modal=null;if(sb)await sb.auth.signOut();render()}
 async function boot(){const a=$('#app');
  if(!sb){a.innerHTML=login();return setMsg('Não foi possível carregar o serviço de login. Verifique sua conexão.')}
- a.innerHTML='<div class="lg"><div class="box"><div class="tile" style="color:#fff">'+LG(54)+'</div><h2>MOVEFIT</h2><p>Carregando…</p></div></div>';
- sb.auth.onAuthStateChange(ev=>{if(ev=='PASSWORD_RECOVERY'){V.role=null;a.innerHTML=novaSenha()}else if(ev=='SIGNED_OUT'&&V.role){V.role=null;V.modal=null;render()}});
+ a.innerHTML='<div class="lg intro"><div class="box"><div class="tile pop" style="color:#fff">'+LG(54,3.4,once('icon')?'run':'')+'</div><h2>MOVEFIT</h2><p>Carregando…</p></div></div>';
+ sb.auth.onAuthStateChange(ev=>{if(ev=='PASSWORD_RECOVERY'){V.role=null;splashWait().then(()=>{a.innerHTML=novaSenha()})}else if(ev=='SIGNED_OUT'&&V.role){V.role=null;V.modal=null;render()}});
  if(/type=recovery/.test(location.hash))return;
  try{const{data}=await sb.auth.getSession();if(data.session)return await abrir(data.session.user)}catch(e){}
- render()}
+ await splashWait();render()}
 boot();
 </script>
 </body>
