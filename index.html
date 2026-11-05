@@ -136,7 +136,7 @@ main{padding:12px;padding-top:calc(12px + env(safe-area-inset-top,0px))}.two{gri
    Hoje: memória + localStorage (try/catch). Para o Supabase, trocar apenas DB.load/DB.save
    por chamadas às tabelas: alunos, presencas, treinos, exercicios, medidas. */
 const SB={url:'https://zievnsdogfbvdttqmmhw.supabase.co',key:'sb_publishable_0w-8wfMVVkcUtV9mT1Uxsw_UW3T40jP'};
-const DB={load(){try{return JSON.parse(localStorage.getItem('movefit.v2'))}catch(e){return null}},save(s){try{localStorage.setItem('movefit.v2',JSON.stringify(s))}catch(e){}}};
+const DB={load(){try{return JSON.parse(localStorage.getItem('movefit.v3'))}catch(e){return null}},save(s){try{localStorage.setItem('movefit.v3',JSON.stringify(s))}catch(e){}}};
 
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -172,16 +172,11 @@ const LIB={'Agachamento livre':'agach','Supino reto':'supino','Remada curvada':'
 const pose=n=>{const k=Object.keys(LIB).find(x=>x.toLowerCase()==String(n).trim().toLowerCase());return POSE[LIB[k]]||POSE.halt};
 const exImg=e=>`<div class="xi">${e.foto?`<img src="${e.foto}" alt="${esc(e.n)}">`:`<svg viewBox="0 0 100 70" style="stroke-width:3">${pose(e.n)}</svg>`}</div>`;
 
-/* ===== Dados iniciais ===== */
-function seed(){let x=0;const e=(n,s,r,c)=>({id:++x,n,s,r,c});
- const P={0:[],1:[e('Supino reto',4,'10','40 kg'),e('Desenvolvimento',3,'12','16 kg'),e('Prancha',3,'40 s','—')],2:[e('Remada curvada',4,'10','30 kg'),e('Rosca direta',3,'12','14 kg'),e('Prancha',3,'40 s','—')],3:[e('Agachamento livre',4,'12','50 kg'),e('Esteira',1,'20 min','—')],4:[e('Supino reto',4,'8','45 kg'),e('Desenvolvimento',4,'10','18 kg')],5:[e('Remada curvada',4,'10','32 kg'),e('Rosca direta',4,'10','16 kg')],6:[e('Agachamento livre',3,'15','40 kg'),e('Prancha',3,'45 s','—'),e('Esteira',1,'15 min','—')]};
- const A=[['Mariana Souza','Mensal',12,'Emagrecimento',68.4],['Carlos Eduardo','Trimestral',45,'Hipertrofia',82.1],['Beatriz Lima','Mensal',3,'Condicionamento',59],['João Pedro','Anual',200,'Hipertrofia',90.3],['Fernanda Alves','Mensal',6,'Emagrecimento',74.2],['Rafael Costa','Semestral',80,'Resistência',77.5]];
- const alunos=A.map((a,i)=>({id:i+1,nome:a[0],tel:'(81) 9'+(8000+i*137)+'-'+(1000+i*311),plano:a[1],venc:K(D(a[2])),obj:a[3],ativo:true,prof:i%2+1}));
- const pesos={};A.forEach((a,i)=>{const d=a[3]=='Hipertrofia'?-1:1;pesos[i+1]=[3,2,1,0].map(k=>+(a[4]+d*k*.5).toFixed(1))});
- const pres={};for(let o=-27;o<=0;o++){const d=D(o);pres[K(d)]=d.getDay()==0?[]:alunos.map(a=>a.id).filter(i=>o==0?i<=2:i==3&&o>-6?false:(i*5+Math.abs(o)*2)%7<4)}
- const plano={};alunos.forEach(a=>{plano[a.id]={};for(const d in P)plano[a.id][d]=P[d].map(e=>({...e,id:++x}))});return{academia:{nome:'Academia MOVEFIT Centro',tel:'(81) 3333-4455'},profs:[{id:1,nome:'Prof. Ricardo',tel:'(81) 98811-2233'},{id:2,nome:'Profª Camila',tel:'(81) 98822-3344'}],alunos,plano,pres,done:{},pesos,xid:x,aid:6,prid:2}}
-let S=DB.load()||seed();
-let V={role:null,tab:'',dia:new Date().getDay(),uid:1,pid:1,aluno:0,modal:null};
+/* ===== Estado inicial: vazio. Alunos e profissionais vêm do Supabase após o login ===== */
+const empty=()=>({academia:{nome:'MOVEFIT',tel:''},profs:[],alunos:[],plano:{},pres:{},done:{},pesos:{},xid:0,map:{},nid:0});
+try{localStorage.removeItem('movefit.v2')}catch(e){}
+let S=Object.assign(empty(),DB.load()||{});
+let V={role:null,tab:'',dia:new Date().getDay(),uid:0,pid:0,aluno:0,modal:null};
 const save=()=>DB.save(S);
 function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2200)}
 
@@ -217,10 +212,10 @@ painel(){const at=ativos(),hj=at.filter(a=>pres(a.id)),f7=Math.round(at.reduce((
 alunos(){return`<div class="top"><h1>Cadastro de alunos</h1></div>
  <div class="card"><h3>Novo aluno</h3><div class="frm"><input id="nn" placeholder="Nome completo"><input id="nt" placeholder="WhatsApp com DDD">${V.role=='acad'?`<select id="nf">${S.profs.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join('')}</select>`:''}<select id="np"><option>Mensal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option></select><select id="no"><option>Emagrecimento</option><option>Hipertrofia</option><option>Condicionamento</option><option>Resistência</option></select><input id="nw" type="number" step=".1" placeholder="Peso (kg)"><button class="btn p" onclick="addAluno()">Cadastrar</button></div></div>
  <div class="card" style="margin-top:12px"><div class="wrap"><table><tr><th>Nome</th><th>WhatsApp</th><th>Plano</th><th>Vencimento</th><th>Status</th><th></th></tr>
- ${meus().map(a=>`<tr><td><b>${esc(a.nome)}</b><br><small class="hint">${esc(a.obj)} · ${esc(profNome(a.prof))}</small></td><td><a href="${waUrl(a.tel)}" target="_blank" rel="noopener" style="color:var(--pr)">${esc(a.tel)}</a></td><td>${esc(a.plano)}</td><td>${fd(a.venc)}</td><td><span class="tag ${a.ativo?'':'m'}">${a.ativo?'Ativo':'Inativo'}</span></td><td style="white-space:nowrap">${V.role=='acad'?`<select onchange="setProf(${a.id},this.value)">${S.profs.map(p=>`<option value="${p.id}" ${p.id==a.prof?'selected':''}>${esc(p.nome)}</option>`).join('')}</select> `:`<button class="btn" onclick="V.aluno=${a.id};V.tab='treinos';render()">Montar treino</button> <a class="btn p" href="${waUrl(a.tel,treinoTxt(a,new Date().getDay()))}" target="_blank" rel="noopener">Enviar treino</a> `}<button class="btn" onclick="togAluno(${a.id})">${a.ativo?'Inativar':'Ativar'}</button></td></tr>`).join('')}</table></div></div>`},
+ ${meus().length?'':'<tr><td colspan="6"><span class="hint">Nenhum aluno cadastrado ainda.</span></td></tr>'}${meus().map(a=>`<tr><td><b>${esc(a.nome)}</b><br><small class="hint">${esc(a.obj)} · ${esc(profNome(a.prof))}</small></td><td><a href="${waUrl(a.tel)}" target="_blank" rel="noopener" style="color:var(--pr)">${esc(a.tel)}</a></td><td>${esc(a.plano)}</td><td>${fd(a.venc)}</td><td><span class="tag ${a.ativo?'':'m'}">${a.ativo?'Ativo':'Inativo'}</span></td><td style="white-space:nowrap">${V.role=='acad'?`<select onchange="setProf(${a.id},this.value)">${S.profs.map(p=>`<option value="${p.id}" ${p.id==a.prof?'selected':''}>${esc(p.nome)}</option>`).join('')}</select> `:`<button class="btn" onclick="V.aluno=${a.id};V.tab='treinos';render()">Montar treino</button> <a class="btn p" href="${waUrl(a.tel,treinoTxt(a,new Date().getDay()))}" target="_blank" rel="noopener">Enviar treino</a> `}<button class="btn" onclick="togAluno(${a.id})">${a.ativo?'Inativar':'Ativar'}</button></td></tr>`).join('')}</table></div></div>`},
 pres(){return`<div class="top"><h1>Presença de hoje</h1><span class="tag">${ativos().filter(a=>pres(a.id)).length} presentes</span></div>
  <div class="card"><div class="wrap"><table><tr><th>Aluno</th><th>7 dias</th><th>Hoje</th></tr>
- ${ativos().map(a=>`<tr><td><b>${esc(a.nome)}</b></td><td>${dots(a.id)}</td><td><button class="btn ${pres(a.id)?'':'p'}" onclick="togglePres(${a.id})">${pres(a.id)?'Presente · desfazer':'Fazer check-in'}</button></td></tr>`).join('')}</table></div></div>`},
+ ${ativos().length?'':'<tr><td colspan="3"><span class="hint">Nenhum aluno ativo ainda.</span></td></tr>'}${ativos().map(a=>`<tr><td><b>${esc(a.nome)}</b></td><td>${dots(a.id)}</td><td><button class="btn ${pres(a.id)?'':'p'}" onclick="togglePres(${a.id})">${pres(a.id)?'Presente · desfazer':'Fazer check-in'}</button></td></tr>`).join('')}</table></div></div>`},
 treinos(){const al=ativos();if(!al.length)return'<div class="top"><h1>Montar treino</h1></div><div class="card"><p class="hint">Cadastre um aluno primeiro.</p></div>';if(!al.some(a=>a.id==V.aluno))V.aluno=al[0].id;const A=S.alunos.find(a=>a.id==V.aluno),d=V.dia,l=pl(A.id,d);
  return`<div class="top"><h1>Montar treino</h1><select onchange="V.aluno=+this.value;render()">${al.map(a=>`<option value="${a.id}" ${a.id==A.id?'selected':''}>${esc(a.nome)}</option>`).join('')}</select><a class="btn p" href="${waUrl(A.tel,treinoTxt(A,d))}" target="_blank" rel="noopener">Enviar treino de ${DS[d]} no WhatsApp</a></div>
  <div class="chips">${[1,2,3,4,5,6,0].map(i=>`<button class="chip ${i==d?'on':''}" onclick="V.dia=${i};render()">${DS[i]}</button>`).join('')}</div>
@@ -250,9 +245,11 @@ const waUrl=(tel,txt)=>{let n=String(tel||'').replace(/\D/g,'');if(n.length&&n.l
 const treinoTxt=(a,d)=>{const l=pl(a.id,d);return`Olá, ${a.nome.split(' ')[0]}! Seu treino de ${DAYS[d]}${d==new Date().getDay()?' (hoje)':''}:\n\n`+(l.length?l.map((e,i)=>`${i+1}. ${e.n} — ${e.s}x${e.r}${e.c&&e.c!='—'?' · '+e.c:''}`).join('\n'):'Dia de descanso.')+`\n\nBom treino! 💪 — ${profOf(a).nome} · MOVEFIT`};
 const NA=[['painel','Visão geral','home'],['profs','Profissionais','users'],['alunos','Alunos','users'],['rel','Relatórios','chart']];
 const PA={painel:PV.painel,alunos:PV.alunos,rel:PV.rel,
-profs(){return`<div class="top"><h1>Profissionais</h1></div><div class="card"><h3>Novo profissional</h3><div class="frm"><input id="pn" placeholder="Nome"><input id="pt" placeholder="WhatsApp com DDD"><button class="btn p" onclick="addProf()">Cadastrar</button></div></div><div class="card" style="margin-top:12px"><div class="wrap"><table><tr><th>Nome</th><th>WhatsApp</th><th>Alunos ativos</th></tr>${S.profs.map(p=>`<tr><td><b>${esc(p.nome)}</b></td><td><a href="${waUrl(p.tel)}" target="_blank" rel="noopener" style="color:var(--pr)">${esc(p.tel)}</a></td><td>${S.alunos.filter(a=>a.prof==p.id&&a.ativo).length}</td></tr>`).join('')}</table></div></div>`}};
-function addProf(){const n=$('#pn').value.trim();if(!n)return toast('Informe o nome');S.profs.push({id:++S.prid,nome:n,tel:$('#pt').value||'—'});save();render();toast('Profissional cadastrado')}
-function setProf(id,p){S.alunos.find(a=>a.id==id).prof=+p;save();render();toast('Aluno transferido')}
+profs(){return`<div class="top"><h1>Profissionais</h1></div><div class="card"><h3>Novo profissional</h3><p class="hint" style="margin:0">Para cadastrar um professor: crie o usuário em Authentication > Users e rode o script 05 (papel profissional). Ele aparece aqui automaticamente.</p></div><div class="card" style="margin-top:12px"><div class="wrap"><table><tr><th>Nome</th><th>WhatsApp</th><th>Alunos ativos</th></tr>${S.profs.map(p=>`<tr><td><b>${esc(p.nome)}</b></td><td><a href="${waUrl(p.tel)}" target="_blank" rel="noopener" style="color:var(--pr)">${esc(p.tel)}</a></td><td>${S.alunos.filter(a=>a.prof==p.id&&a.ativo).length}</td></tr>`).join('')}</table></div></div>`}};
+async function setProf(id,p){const a=S.alunos.find(x=>x.id==id),pr=S.profs.find(x=>x.id==+p),old=a.prof;
+ const{error}=await sb.from('alunos').update({profissional_id:pr?pr.sb:null}).eq('id',a.sb);
+ if(error){render();return toast('Não foi possível transferir: '+error.message)}
+ a.prof=+p;save();render();toast('Aluno transferido')}
 
 /* ===== Telas do ALUNO ===== */
 const NS=[['hoje','Treino de hoje','dumb'],['evo','Minha evolução','chart']];
@@ -271,8 +268,18 @@ evo(){const a=S.alunos.find(x=>x.id==V.uid),p=S.pesos[a.id]=S.pesos[a.id]||[],v=
 };
 
 /* ===== Ações ===== */
-function addAluno(){const n=$('#nn').value.trim();if(!n)return toast('Informe o nome');S.alunos.push({id:++S.aid,nome:n,tel:$('#nt').value||'—',plano:$('#np').value,venc:K(D(30)),obj:$('#no').value,ativo:true,prof:V.role=='acad'?+$('#nf').value:V.pid});const w=parseFloat($('#nw').value);S.pesos[S.aid]=w?[w]:[];S.pres[K(new Date())]=S.pres[K(new Date())]||[];save();render();toast('Aluno cadastrado')}
-function togAluno(id){const a=S.alunos.find(x=>x.id==id);a.ativo=!a.ativo;save();render()}
+let busy=false;
+async function addAluno(){const n=$('#nn').value.trim();if(!n)return toast('Informe o nome');if(busy)return;
+ const prof=V.role=='acad'?(+$('#nf')?.value||0):V.pid,pr=S.profs.find(x=>x.id==prof),tel=$('#nt').value.trim();
+ busy=true;
+ const{data,error}=await sb.from('alunos').insert({academia_id:V.acadId,profissional_id:pr?pr.sb:null,nome:n,whatsapp:tel||null,plano:$('#np').value,vencimento:K(D(30)),objetivo:$('#no').value}).select().single();
+ busy=false;if(error)return toast('Não foi possível cadastrar: '+error.message);
+ const id=S.map[data.id]=++S.nid;S.alunos.push({id,sb:data.id,perfil:null,nome:n,tel:tel||'—',plano:data.plano,venc:data.vencimento,obj:data.objetivo,ativo:data.ativo!==false,prof});
+ S.alunos.sort((m,k)=>m.nome.localeCompare(k.nome,'pt-BR'));
+ const w=parseFloat($('#nw').value);S.pesos[id]=w?[w]:[];save();render();toast('Aluno cadastrado')}
+async function togAluno(id){const a=S.alunos.find(x=>x.id==id);a.ativo=!a.ativo;render();
+ const{error}=await sb.from('alunos').update({ativo:a.ativo}).eq('id',a.sb);
+ if(error){a.ativo=!a.ativo;render();return toast('Não foi possível salvar: '+error.message)}save()}
 function addEx(){const n=$('#en').value.trim();if(!n)return toast('Informe o exercício');const f=$('#ef').files[0],go=foto=>{pl(V.aluno,V.dia).push({id:++S.xid,n,s:+$('#es').value||3,r:$('#er').value||'10',c:$('#ec').value||'—',foto});save();render();toast('Exercício adicionado')};f?readImg(f,go):go('')}
 function delEx(id){const p=S.plano[V.aluno];p[V.dia]=p[V.dia].filter(e=>e.id!=id);save();render()}
 function fotoEx(id){V.fx=id;$('#fx').click()}
@@ -322,10 +329,25 @@ async function entrar(){const e=$('#le').value.trim(),p=$('#lp').value;AU.email=
  const{data,error}=await sb.auth.signInWithPassword({email:e,password:p});
  if(error){b.disabled=false;b.textContent='Entrar';return setMsg(msgErr(error))}
  await abrir(data.user)}
+async function sincronizar(user,pf,R){
+ const lid=u=>u==null?0:(S.map[u]||(S.map[u]=++S.nid));
+ S.alunos=[];S.profs=[];
+ try{
+  const[a,p,c]=await Promise.all([sb.from('alunos').select('*'),sb.from('perfis').select('id,nome,telefone').eq('papel','profissional'),sb.from('academias').select('*').limit(1)]);
+  if(a.error)toast('Não foi possível carregar os alunos: '+a.error.message);
+  S.profs=(p.data||[]).map(x=>({id:lid(x.id),sb:x.id,nome:x.nome||'Profissional',tel:x.telefone||'—'}));
+  if(R=='pro'&&!S.profs.some(x=>x.sb==user.id))S.profs.push({id:lid(user.id),sb:user.id,nome:pf.nome,tel:'—'});
+  S.alunos=(a.data||[]).map(x=>({id:lid(x.id),sb:x.id,perfil:x.perfil_id,nome:x.nome||'Aluno',tel:x.whatsapp||'—',plano:x.plano||'Mensal',venc:x.vencimento||K(D(30)),obj:x.objetivo||'—',ativo:x.ativo!==false,prof:lid(x.profissional_id)})).sort((m,n)=>m.nome.localeCompare(n.nome,'pt-BR'));
+  S.academia={nome:(c.data&&c.data[0]&&c.data[0].nome)||'MOVEFIT',tel:''};
+ }catch(e){toast('Erro ao carregar dados: '+(e.message||e))}
+ V.pid=R=='pro'?lid(user.id):0;
+ const eu=S.alunos.find(x=>x.perfil&&x.perfil==user.id);V.uid=eu?eu.id:0;save()}
 async function abrir(user){const{data:pf,error}=await sb.from('perfis').select('nome,papel,academia_id').eq('id',user.id).maybeSingle();
  await splashWait();const R={academia:'acad',profissional:'pro',aluno:'aluno'}[pf&&pf.papel];
  if(error||!R){await sb.auth.signOut();render();return setMsg(error?'Não foi possível ler seu perfil. Verifique se o SQL do banco foi executado.':'Sua conta ainda não tem perfil de acesso. Fale com a academia.')}
- V.role=R;V.nome=pf.nome;V.tab=R=='aluno'?'hoje':'painel';V.dia=new Date().getDay();render()}
+ await sincronizar(user,pf,R);
+ if(R=='aluno'&&!V.uid){await sb.auth.signOut();V.role=null;render();return setMsg('Não encontramos seu cadastro de aluno. Fale com o professor.')}
+ V.acadId=pf.academia_id;V.role=R;V.nome=pf.nome;V.tab=R=='aluno'?'hoje':'painel';V.dia=new Date().getDay();render()}
 async function esqueci(){const e=$('#le').value.trim();if(!e)return setMsg('Digite seu e-mail acima e toque novamente.');
  const{error}=await sb.auth.resetPasswordForEmail(e,{redirectTo:location.origin+location.pathname});
  setMsg(error?msgErr(error):'Enviamos um link para redefinir sua senha no e-mail informado.',!error)}
