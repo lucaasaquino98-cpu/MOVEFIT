@@ -87,6 +87,15 @@ tr.cl{cursor:pointer}tr.cl:hover{background:var(--tint)}
 .lg .btn.o{background:rgba(255,255,255,.08);color:#fff}
 .lg select{width:100%;background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.18)}
 .lg option{color:#14181f}
+.lg input{width:100%;margin-top:10px;padding:13px;font-size:16px;background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.18)}
+.lg input::placeholder{color:#64748b}
+.lg .keep{display:flex;align-items:center;gap:10px;margin:14px 0 0;color:#cbd5e1;cursor:pointer;text-align:left;width:100%;background:none;border:0;font:inherit;padding:0}
+.lg .keep i{width:22px;height:22px;border-radius:7px;border:2px solid #475569;display:grid;place-items:center;flex-shrink:0}
+.lg .keep.on i{background:#14b8a6;border-color:#14b8a6;color:#04201c}
+.lg .keep i svg{opacity:0}.lg .keep.on i svg{opacity:1}
+.lg .lk{background:none;border:0;color:#5eead4;cursor:pointer;font:inherit;margin-top:14px;padding:6px}
+.lg .er{color:#fca5a5;min-height:20px;margin:12px 0 0;font-size:13px}.lg .er.ok{color:#5eead4}
+.lg .btn:disabled{opacity:.6;cursor:wait}
 @media (max-width:760px){
 .app{flex-direction:column-reverse}
 nav{width:auto;flex-direction:row;padding:6px;justify-content:space-around;gap:0}
@@ -100,11 +109,12 @@ main{padding:12px}.two{grid-template-columns:1fr}
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <input type="file" id="fx" accept="image/*" hidden>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script>
 /* ===== Camada de dados =====
    Hoje: memória + localStorage (try/catch). Para o Supabase, trocar apenas DB.load/DB.save
    por chamadas às tabelas: alunos, presencas, treinos, exercicios, medidas. */
-const SB={url:'',key:''};
+const SB={url:'https://zievnsdogfbvdttqmmhw.supabase.co',key:'sb_publishable_0w-8wfMVVkcUtV9mT1Uxsw_UW3T40jP'};
 const DB={load(){try{return JSON.parse(localStorage.getItem('movefit.v2'))}catch(e){return null}},save(s){try{localStorage.setItem('movefit.v2',JSON.stringify(s))}catch(e){}}};
 
 const $=s=>document.querySelector(s);
@@ -246,19 +256,22 @@ function fotoEx(id){V.fx=id;$('#fx').click()}
 $('#fx').onchange=ev=>{const f=ev.target.files[0];if(!f)return;readImg(f,d=>{Object.values(S.plano[V.aluno]).flat().filter(e=>e.id==V.fx).forEach(e=>e.foto=d);save();render();toast('Foto atualizada')});ev.target.value=''};
 function togDone(id){const k=K(new Date())+'|'+V.uid,l=S.done[k]=S.done[k]||[],i=l.indexOf(id);i>=0?l.splice(i,1):l.push(id);if(l.length&&!pres(V.uid)){const t=K(new Date());(S.pres[t]=S.pres[t]||[]).push(V.uid)}save();render()}
 function addPeso(){const w=parseFloat($('#pw').value);if(!w)return toast('Informe o peso');S.pesos[V.uid].push(w);save();render()}
-function entrar(r){V.role=r;V.tab=r=='aluno'?'hoje':'painel';V.dia=new Date().getDay();if(r=='aluno')V.uid=+$('#su').value;if(r=='pro')V.pid=+$('#sp').value;render()}
-const sair=()=>{V.role=null;V.modal=null;render()};
+/* entrar() fica na seção de autenticação */
+/* sair() fica na seção de autenticação */
 const go=t=>{V.tab=t;render()};
 
 /* ===== Estrutura ===== */
 function login(){return`<div class="lg"><div class="box"><div class="tile" style="color:#fff">${LG(54)}</div><h2>MOVEFIT</h2><p>Treino, presença e evolução em um só lugar</p>
- <button class="btn" onclick="entrar('acad')">Entrar como academia</button>
- <div style="margin:18px 0 6px;color:#64748b;font-size:12px">ou entre como profissional</div><select id="sp">${S.profs.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join('')}</select>
- <button class="btn o" onclick="entrar('pro')">Entrar como profissional</button>
- <div style="margin:18px 0 6px;color:#64748b;font-size:12px">ou entre como aluno</div><select id="su">${S.alunos.filter(a=>a.ativo).map(a=>`<option value="${a.id}">${esc(a.nome)}</option>`).join('')}</select>
- <button class="btn o" onclick="entrar('aluno')">Entrar como aluno</button>
- <p style="margin-top:22px;font-size:12px">Modo demonstração · login real com Supabase em breve</p></div></div>`}
-function shell(items,body){const pro=V.role!='aluno',a=S.alunos.find(x=>x.id==V.uid),rl={acad:['Academia',S.academia.nome],pro:['Profissional',profNome(V.pid)],aluno:['Aluno']}[V.role];
+ <input id="le" type="email" placeholder="E-mail" autocomplete="username" value="${esc(AU.email)}" onkeydown="if(event.key=='Enter')$('#lp').focus()">
+ <input id="lp" type="password" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key=='Enter')entrar()">
+ <button class="keep ${AU.keep?'on':''}" type="button" role="checkbox" aria-checked="${AU.keep}" onclick="toggleKeep(this)"><i>${ic('ok',14)}</i>Manter conectado neste aparelho</button>
+ <div class="er" role="alert"></div>
+ <button class="btn" onclick="entrar()">Entrar</button>
+ <button class="lk" onclick="esqueci()">Esqueci minha senha</button></div></div>`}
+function novaSenha(){return`<div class="lg"><div class="box"><div class="tile" style="color:#fff">${LG(54)}</div><h2>Nova senha</h2><p>Escolha uma senha nova para sua conta</p>
+ <input id="lp" type="password" placeholder="Nova senha (mínimo 6 caracteres)" autocomplete="new-password" onkeydown="if(event.key=='Enter')salvarSenha()">
+ <div class="er" role="alert"></div><button class="btn" onclick="salvarSenha()">Salvar senha</button></div></div>`}
+function shell(items,body){const pro=V.role!='aluno',a=S.alunos.find(x=>x.id==V.uid),rl={acad:['Academia',V.nome||S.academia.nome],pro:['Profissional',V.nome||profNome(V.pid)],aluno:['Aluno']}[V.role];
  return`<div class="app"><nav><div class="brand"><i style="color:#fff">${LG(20,3.6)}</i>MOVEFIT</div><div class="lb">${rl[0]}</div>
  ${items.map(i=>`<button class="${V.tab==i[0]?'on':''}" onclick="go('${i[0]}')">${ic(i[2])}<span>${i[1]}</span></button>`).join('')}
  <div class="sp"></div><div class="usr"><b>${esc((pro?rl[1]:a.nome)[0])}</b><div>${esc(pro?rl[1]:a.nome.split(' ')[0])}<small>${pro?rl[0]:esc(a.obj)}</small></div></div>
@@ -266,7 +279,44 @@ function shell(items,body){const pro=V.role!='aluno',a=S.alunos.find(x=>x.id==V.
 function render(){const el=$('#app');if(!V.role){el.innerHTML=login();return}
  const R={acad:[NA,PA],pro:[NP,PV],aluno:[NS,SV]}[V.role];el.innerHTML=shell(R[0],R[1][V.tab]());
  if(V.role!='aluno'&&V.modal)el.insertAdjacentHTML('beforeend',modalAluno())}
-render();
+/* ===== Autenticação (Supabase Auth) =====
+   Papéis vêm da tabela public.perfis (id = auth.users.id, nome, papel, academia_id).
+   A proteção real dos dados é feita pelas regras RLS do banco, não por esta tela. */
+const KEEP='movefit.keep';
+const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const store={getItem:k=>{try{return localStorage.getItem(k)??sessionStorage.getItem(k)}catch(e){return null}},
+ setItem:(k,v)=>{try{const keep=lsGet(KEEP)!='0';(keep?localStorage:sessionStorage).setItem(k,v);(keep?sessionStorage:localStorage).removeItem(k)}catch(e){}},
+ removeItem:k=>{try{localStorage.removeItem(k);sessionStorage.removeItem(k)}catch(e){}}};
+const sb=window.supabase?window.supabase.createClient(SB.url,SB.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:store}}):null;
+const AU={keep:lsGet(KEEP)!='0',email:''};
+const setMsg=(t,ok)=>{const e=$('.er');if(e){e.textContent=t;e.className='er'+(ok?' ok':'')}};
+const toggleKeep=b=>{AU.keep=!AU.keep;b.classList.toggle('on',AU.keep);b.setAttribute('aria-checked',AU.keep)};
+const msgErr=e=>{const m=String(e&&e.message||e);return/invalid login/i.test(m)?'E-mail ou senha incorretos.':/not confirmed/i.test(m)?'Confirme seu e-mail antes de entrar.':/rate limit|too many/i.test(m)?'Muitas tentativas. Aguarde um pouco.':/network|fetch/i.test(m)?'Sem conexão com o servidor.':/password/i.test(m)?'Senha inválida: use pelo menos 6 caracteres.':'Erro: '+m};
+async function entrar(){const e=$('#le').value.trim(),p=$('#lp').value;AU.email=e;if(!e||!p)return setMsg('Informe e-mail e senha.');
+ const b=$('.lg .btn');b.disabled=true;b.textContent='Entrando…';setMsg('');
+ try{localStorage.setItem(KEEP,AU.keep?'1':'0')}catch(x){}
+ const{data,error}=await sb.auth.signInWithPassword({email:e,password:p});
+ if(error){b.disabled=false;b.textContent='Entrar';return setMsg(msgErr(error))}
+ await abrir(data.user)}
+async function abrir(user){const{data:pf,error}=await sb.from('perfis').select('nome,papel,academia_id').eq('id',user.id).maybeSingle();
+ const R={academia:'acad',profissional:'pro',aluno:'aluno'}[pf&&pf.papel];
+ if(error||!R){await sb.auth.signOut();render();return setMsg(error?'Não foi possível ler seu perfil. Verifique se o SQL do banco foi executado.':'Sua conta ainda não tem perfil de acesso. Fale com a academia.')}
+ V.role=R;V.nome=pf.nome;V.tab=R=='aluno'?'hoje':'painel';V.dia=new Date().getDay();render()}
+async function esqueci(){const e=$('#le').value.trim();if(!e)return setMsg('Digite seu e-mail acima e toque novamente.');
+ const{error}=await sb.auth.resetPasswordForEmail(e,{redirectTo:location.origin+location.pathname});
+ setMsg(error?msgErr(error):'Enviamos um link para redefinir sua senha no e-mail informado.',!error)}
+async function salvarSenha(){const p=$('#lp').value;if(p.length<6)return setMsg('Use pelo menos 6 caracteres.');
+ const{data,error}=await sb.auth.updateUser({password:p});if(error)return setMsg(msgErr(error));
+ history.replaceState(null,'',location.pathname);await abrir(data.user)}
+async function sair(){V.role=null;V.modal=null;if(sb)await sb.auth.signOut();render()}
+async function boot(){const a=$('#app');
+ if(!sb){a.innerHTML=login();return setMsg('Não foi possível carregar o serviço de login. Verifique sua conexão.')}
+ a.innerHTML='<div class="lg"><div class="box"><div class="tile" style="color:#fff">'+LG(54)+'</div><h2>MOVEFIT</h2><p>Carregando…</p></div></div>';
+ sb.auth.onAuthStateChange(ev=>{if(ev=='PASSWORD_RECOVERY'){V.role=null;a.innerHTML=novaSenha()}else if(ev=='SIGNED_OUT'&&V.role){V.role=null;V.modal=null;render()}});
+ if(/type=recovery/.test(location.hash))return;
+ try{const{data}=await sb.auth.getSession();if(data.session)return await abrir(data.session.user)}catch(e){}
+ render()}
+boot();
 </script>
 </body>
 </html>
